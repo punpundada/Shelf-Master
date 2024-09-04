@@ -2,8 +2,10 @@ package application
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
+	"github.com/punpundada/libM/internals/config"
 	db "github.com/punpundada/libM/internals/db/sqlc"
 )
 
@@ -18,8 +20,9 @@ func New(q *db.Queries) *App {
 }
 
 func (a *App) Start(cxt context.Context) error {
+	PORT := config.GetConfig().PORT
 	server := &http.Server{
-		Addr:    ":3000",
+		Addr:    fmt.Sprintf(":%s", PORT),
 		Handler: a.route,
 	}
 	return server.ListenAndServe()
