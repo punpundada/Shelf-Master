@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/jackc/pgx/v5"
@@ -13,15 +12,8 @@ import (
 
 func main() {
 	ctx := context.Background()
-	config := config.GetConfig()
 
-	conn, err := pgx.Connect(ctx,
-		fmt.Sprintf("postgresql://%s:%s@%s:%s/%s",
-			config.POSTGRES_USER,
-			config.POSTGRES_PASSWORD,
-			config.POSTGRES_HOST,
-			config.POSTGRES_PORT,
-			config.POSTGRES_DB))
+	conn, err := pgx.Connect(ctx, config.GlobalConfig.CONNECTION_STR)
 
 	if err != nil {
 		log.Fatal(err)

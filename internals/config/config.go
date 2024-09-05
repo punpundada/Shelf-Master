@@ -5,6 +5,11 @@ import (
 	"os"
 )
 
+var GlobalConfig *Config
+
+func init() {
+	GlobalConfig = GetConfig()
+}
 func getEnv(env string) string {
 	data, ok := os.LookupEnv(env)
 	if !ok {
@@ -20,6 +25,7 @@ type Config struct {
 	POSTGRES_PORT     string
 	POSTGRES_HOST     string
 	PORT              string
+	CONNECTION_STR    string
 }
 
 func GetConfig() *Config {
@@ -30,5 +36,6 @@ func GetConfig() *Config {
 		POSTGRES_PORT:     getEnv("POSTGRES_PORT"),
 		POSTGRES_HOST:     getEnv("POSTGRES_HOST"),
 		PORT:              getEnv("PORT"),
+		CONNECTION_STR:    getEnv("CONNECTION_STR"),
 	}
 }

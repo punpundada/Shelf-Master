@@ -4,21 +4,90 @@
 
 package db
 
-type Author struct {
-	ID   int32  `json:"id"`
-	Name string `json:"name"`
+import (
+	"database/sql/driver"
+	"fmt"
+
+	"github.com/jackc/pgx/v5/pgtype"
+)
+
+type RoleType string
+
+const (
+	RoleTypeADMIN     RoleType = "ADMIN"
+	RoleTypeUSER      RoleType = "USER"
+	RoleTypeLIBRARIAN RoleType = "LIBRARIAN"
+	RoleTypeAUTHOR    RoleType = "AUTHOR"
+)
+
+func (e *RoleType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = RoleType(s)
+	case string:
+		*e = RoleType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for RoleType: %T", src)
+	}
+	return nil
+}
+
+type NullRoleType struct {
+	RoleType RoleType `json:"role_type"`
+	Valid    bool     `json:"valid"` // Valid is true if RoleType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullRoleType) Scan(value interface{}) error {
+	if value == nil {
+		ns.RoleType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.RoleType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullRoleType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.RoleType), nil
 }
 
 type Book struct {
-	ID          int32  `json:"id"`
-	Name        string `json:"name"`
-	Authorid    int32  `json:"authorid"`
-	Description string `json:"description"`
+	ID          int32            `json:"id"`
+	Name        string           `json:"name"`
+	Authorid    int32            `json:"authorid"`
+	Description string           `json:"description"`
+	CreatedAt   pgtype.Timestamp `json:"created_at"`
+	UpdatedAt   pgtype.Timestamp `json:"updated_at"`
+}
+
+type Librarian struct {
+	Email        string           `json:"email"`
+	UserID       int32            `json:"user_id"`
+	PasswordHash string           `json:"password_hash"`
+	LibraryID    int32            `json:"library_id"`
+	CreatedAt    pgtype.Timestamp `json:"created_at"`
+	UpdatedAt    pgtype.Timestamp `json:"updated_at"`
+}
+
+type Library struct {
+	ID          int32            `json:"id"`
+	Name        string           `json:"name"`
+	Address     string           `json:"address"`
+	PhoneNumber pgtype.Text      `json:"phone_number"`
+	Email       pgtype.Text      `json:"email"`
+	CreatedAt   pgtype.Timestamp `json:"created_at"`
+	UpdatedAt   pgtype.Timestamp `json:"updated_at"`
 }
 
 type User struct {
-	ID           int32  `json:"id"`
-	Name         string `json:"name"`
-	Email        string `json:"email"`
-	PasswordHash string `json:"password_hash"`
+	ID           int32            `json:"id"`
+	Name         string           `json:"name"`
+	MobileNumber pgtype.Text      `json:"mobile_number"`
+	Role         NullRoleType     `json:"role"`
+	CreatedAt    pgtype.Timestamp `json:"created_at"`
+	UpdatedAt    pgtype.Timestamp `json:"updated_at"`
 }

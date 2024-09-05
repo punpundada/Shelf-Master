@@ -11,6 +11,5 @@ type Auth struct {
 }
 
 func (a *Auth) RegisterUser(w http.ResponseWriter, r *http.Request) {
-	email := r.PathValue("email")
-	a.SaveUser(r.Context(), email)
+	w.Write([]byte("\n\n\nTHis is login route\n\n\n"))
 }

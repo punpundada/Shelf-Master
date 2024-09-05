@@ -20,10 +20,12 @@ func New(q *db.Queries) *App {
 }
 
 func (a *App) Start(cxt context.Context) error {
-	PORT := config.GetConfig().PORT
+	PORT := config.GlobalConfig.PORT
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%s", PORT),
 		Handler: a.route,
 	}
+	url := fmt.Sprintf("http://localhost:%s", PORT)
+	fmt.Printf("\nServer Listning on %s\n", url)
 	return server.ListenAndServe()
 }
