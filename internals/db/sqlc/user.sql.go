@@ -7,6 +7,8 @@ package db
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const getUserById = `-- name: GetUserById :one
@@ -15,6 +17,31 @@ SELECT id, name, mobile_number, role, created_at, updated_at FROM users WHERE id
 
 func (q *Queries) GetUserById(ctx context.Context, id int32) (User, error) {
 	row := q.db.QueryRow(ctx, getUserById, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.MobileNumber,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const saveUser = `-- name: SaveUser :one
+INSERT INTO users (
+    name,mobile_number
+) VALUES ($1,$2) RETURNING id, name, mobile_number, role, created_at, updated_at
+`
+
+type SaveUserParams struct {
+	Name         string      `json:"name"`
+	MobileNumber pgtype.Text `json:"mobile_number"`
+}
+
+func (q *Queries) SaveUser(ctx context.Context, arg SaveUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, saveUser, arg.Name, arg.MobileNumber)
 	var i User
 	err := row.Scan(
 		&i.ID,

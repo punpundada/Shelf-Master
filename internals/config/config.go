@@ -26,6 +26,7 @@ type Config struct {
 	POSTGRES_HOST     string
 	PORT              string
 	CONNECTION_STR    string
+	ENV               string
 }
 
 func GetConfig() *Config {
@@ -37,5 +38,6 @@ func GetConfig() *Config {
 		POSTGRES_HOST:     getEnv("POSTGRES_HOST"),
 		PORT:              getEnv("PORT"),
 		CONNECTION_STR:    getEnv("CONNECTION_STR"),
+		ENV:               getEnv("ENV"),
 	}
 }

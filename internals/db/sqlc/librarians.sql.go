@@ -9,6 +9,24 @@ import (
 	"context"
 )
 
+const getLibrarianById = `-- name: GetLibrarianById :one
+SELECT email, user_id, password_hash, library_id, created_at, updated_at FROM librarians WHERE user_id  = $1
+`
+
+func (q *Queries) GetLibrarianById(ctx context.Context, userID int32) (Librarian, error) {
+	row := q.db.QueryRow(ctx, getLibrarianById, userID)
+	var i Librarian
+	err := row.Scan(
+		&i.Email,
+		&i.UserID,
+		&i.PasswordHash,
+		&i.LibraryID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getUserByEmail = `-- name: GetUserByEmail :one
 select email, user_id, password_hash, library_id, created_at, updated_at FROM librarians WHERE email = $1
 `

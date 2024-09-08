@@ -7,11 +7,15 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	db "github.com/punpundada/libM/internals/db/sqlc"
 	"github.com/punpundada/libM/internals/handlers"
+	m "github.com/punpundada/libM/internals/handlers/middleware"
 	"github.com/punpundada/libM/internals/service"
 )
 
 func loadRoutes(q *db.Queries) *chi.Mux {
 	router := chi.NewRouter()
+	mw := &m.Middleware{}
+	router.Use(mw.CSRFProtection)
+	router.Use(mw.ValidateSessionCookie)
 	router.Use(middleware.Logger)
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Hello world\n"))

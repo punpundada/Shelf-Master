@@ -64,6 +64,13 @@ type Book struct {
 	UpdatedAt   pgtype.Timestamp `json:"updated_at"`
 }
 
+type BookInventory struct {
+	ID                int32 `json:"id"`
+	BookID            int32 `json:"book_id"`
+	TotalQuantity     int32 `json:"total_quantity"`
+	AvailableQuantity int32 `json:"available_quantity"`
+}
+
 type Librarian struct {
 	Email        string           `json:"email"`
 	UserID       int32            `json:"user_id"`
@@ -83,6 +90,13 @@ type Library struct {
 	UpdatedAt   pgtype.Timestamp `json:"updated_at"`
 }
 
+type Session struct {
+	ID        string           `json:"id"`
+	UserID    int32            `json:"user_id"`
+	ExpiresAt pgtype.Timestamp `json:"expires_at"`
+	Fresh     pgtype.Bool      `json:"fresh"`
+}
+
 type User struct {
 	ID           int32            `json:"id"`
 	Name         string           `json:"name"`
@@ -90,4 +104,11 @@ type User struct {
 	Role         NullRoleType     `json:"role"`
 	CreatedAt    pgtype.Timestamp `json:"created_at"`
 	UpdatedAt    pgtype.Timestamp `json:"updated_at"`
+}
+
+type UserBook struct {
+	UserID     int32            `json:"user_id"`
+	BookID     int32            `json:"book_id"`
+	BorrowedAt pgtype.Timestamp `json:"borrowed_at"`
+	DueDate    pgtype.Timestamp `json:"due_date"`
 }
