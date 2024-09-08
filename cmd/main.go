@@ -5,9 +5,9 @@ import (
 	"log"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/punpundada/libM/internals/application"
-	"github.com/punpundada/libM/internals/config"
-	db "github.com/punpundada/libM/internals/db/sqlc"
+	"github.com/punpundada/shelfMaster/internals/application"
+	"github.com/punpundada/shelfMaster/internals/config"
+	db "github.com/punpundada/shelfMaster/internals/db/sqlc"
 )
 
 func main() {

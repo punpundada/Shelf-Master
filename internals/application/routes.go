@@ -5,10 +5,10 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	db "github.com/punpundada/libM/internals/db/sqlc"
-	"github.com/punpundada/libM/internals/handlers"
-	m "github.com/punpundada/libM/internals/handlers/middleware"
-	"github.com/punpundada/libM/internals/service"
+	db "github.com/punpundada/shelfMaster/internals/db/sqlc"
+	"github.com/punpundada/shelfMaster/internals/handlers"
+	m "github.com/punpundada/shelfMaster/internals/handlers/middleware"
+	"github.com/punpundada/shelfMaster/internals/service"
 )
 
 func loadRoutes(q *db.Queries) *chi.Mux {

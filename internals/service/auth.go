@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 
-	db "github.com/punpundada/libM/internals/db/sqlc"
+	db "github.com/punpundada/shelfMaster/internals/db/sqlc"
 )
 
 type AuthService struct {

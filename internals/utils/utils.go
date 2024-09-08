@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/punpundada/libM/internals/config"
-	db "github.com/punpundada/libM/internals/db/sqlc"
+	"github.com/punpundada/shelfMaster/internals/config"
+	db "github.com/punpundada/shelfMaster/internals/db/sqlc"
 	"golang.org/x/crypto/bcrypt"
 )
 

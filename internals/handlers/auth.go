@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/punpundada/libM/internals/service"
+	"github.com/punpundada/shelfMaster/internals/service"
 )
 
 type Auth struct {

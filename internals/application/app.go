@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/punpundada/libM/internals/config"
-	db "github.com/punpundada/libM/internals/db/sqlc"
+	"github.com/punpundada/shelfMaster/internals/config"
+	db "github.com/punpundada/shelfMaster/internals/db/sqlc"
 )
 
 type App struct {
