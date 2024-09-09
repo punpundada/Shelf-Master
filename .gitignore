@@ -2,3 +2,4 @@ bin
 db-data/
 .env
 /db-data
+tmp/

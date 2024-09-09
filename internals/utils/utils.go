@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -85,4 +86,27 @@ func IsValidEmail(email string) bool {
 	const emailRegex = `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
 	re := regexp.MustCompile(emailRegex)
 	return re.MatchString(email)
+}
+
+type ErrorResponse struct {
+	Success bool   `json:"success"`
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Details string `json:"details,omitempty"`
+}
+
+func WriteErrorResponse(w http.ResponseWriter, code int, message string, details ...string) {
+	errorResponse := ErrorResponse{
+		Success: false,
+		Code:    code,
+		Message: message,
+	}
+	if len(details) > 0 {
+		errorResponse.Details = details[0]
+	}
+
+	w.WriteHeader(code)
+	if err := json.NewEncoder(w).Encode(errorResponse); err != nil {
+		http.Error(w, "Failed to generate error response", http.StatusInternalServerError)
+	}
 }

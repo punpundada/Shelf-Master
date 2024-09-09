@@ -14,7 +14,8 @@ import (
 func loadRoutes(q *db.Queries) *chi.Mux {
 	router := chi.NewRouter()
 	mw := &m.Middleware{}
-	router.Use(mw.CSRFProtection)
+	// router.Use(mw.CSRFProtection)
+	router.Use(mw.SetContentType)
 	router.Use(mw.ValidateSessionCookie)
 	router.Use(middleware.Logger)
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
@@ -32,6 +33,7 @@ func loadAuthRoutes(q *db.Queries) func(chi.Router) {
 	}
 
 	return func(router chi.Router) {
-		router.Post("/login", authRoutess.RegisterUser)
+		router.Post("/login", authRoutess.LoginUser)
+		router.Post("/signup", authRoutess.RegisterUser)
 	}
 }
