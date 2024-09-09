@@ -10,4 +10,4 @@ services:
     ports:
       - "${POSTGRES_PORT}:5432"
     volumes:
-      - ./db-data:/var/lib/postgresql/data
+      - ~/volumes/shelfmaster:/var/lib/postgresql/data

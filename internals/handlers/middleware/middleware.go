@@ -32,8 +32,8 @@ func (m *Middleware) CSRFProtection(next http.Handler) http.Handler {
 type session string
 type librarian string
 
-const sess session = "session"
-const libr librarian = "librarian"
+const Sess session = "session"
+const Libr librarian = "librarian"
 
 func (m *Middleware) ValidateSessionCookie(next http.Handler) http.Handler {
 
@@ -65,8 +65,8 @@ func (m *Middleware) ValidateSessionCookie(next http.Handler) http.Handler {
 		if session == nil {
 			http.SetCookie(w, utils.CreateBlankSessionCookie())
 		}
-		contextWithData := context.WithValue(r.Context(), sess, session)
-		ctx := context.WithValue(contextWithData, libr, librarian)
+		contextWithData := context.WithValue(r.Context(), Sess, session)
+		ctx := context.WithValue(contextWithData, Libr, librarian)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
