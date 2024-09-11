@@ -23,6 +23,7 @@ type LoginBody struct {
 func (a *AuthService) LoginUser(r *http.Request) (*db.Librarian, *db.Session, error) {
 	var body = LoginBody{}
 	err := json.NewDecoder(r.Body).Decode(&body)
+	defer r.Body.Close()
 	if err != nil {
 		return nil, nil, err
 	}

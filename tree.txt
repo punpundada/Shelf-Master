@@ -1,0 +1,43 @@
+.
+├── bin
+│   └── app
+├── cmd
+│   └── main.go
+├── docker-compose.yml
+├── go.mod
+├── go.sum
+├── internals
+│   ├── application
+│   │   ├── app.go
+│   │   └── routes.go
+│   ├── config
+│   │   └── config.go
+│   ├── db
+│   │   ├── sql
+│   │   │   ├── query
+│   │   │   │   ├── librarians.sql
+│   │   │   │   ├── session.sql
+│   │   │   │   └── user.sql
+│   │   │   └── schema
+│   │   │       └── schema.sql
+│   │   └── sqlc
+│   │       ├── db.go
+│   │       ├── librarians.sql.go
+│   │       ├── models.go
+│   │       ├── session.sql.go
+│   │       └── user.sql.go
+│   ├── handlers
+│   │   ├── auth.go
+│   │   └── middleware
+│   │       └── middleware.go
+│   ├── service
+│   │   ├── auth.go
+│   │   └── user.go
+│   └── utils
+│       └── utils.go
+├── Makefile
+├── sqlc.yaml
+├── tmp
+└── tree.txt
+
+15 directories, 25 files

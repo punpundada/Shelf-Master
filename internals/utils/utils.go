@@ -103,6 +103,13 @@ func WriteErrorResponse(w http.ResponseWriter, code int, message string, details
 	}
 	if len(details) > 0 {
 		errorResponse.Details = details[0]
+		var sb strings.Builder
+		for index, item := range details {
+			if index == 1 {
+				sb.WriteString(item)
+			}
+			sb.WriteString(". " + item)
+		}
 	}
 
 	w.WriteHeader(code)

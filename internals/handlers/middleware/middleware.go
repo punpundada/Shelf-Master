@@ -44,8 +44,9 @@ func (m *Middleware) ValidateSessionCookie(next http.Handler) http.Handler {
 			return
 		}
 		session, librarian, err := utils.ValidateSession(r.Context(), m.Queries, cookie.Value)
+
 		if err != nil {
-			http.SetCookie(w, utils.CreateSessionCookies(session.ID))
+			http.SetCookie(w, utils.CreateBlankSessionCookie())
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -56,7 +57,7 @@ func (m *Middleware) ValidateSessionCookie(next http.Handler) http.Handler {
 				ID:        session.ID,
 			})
 			if err != nil {
-				http.SetCookie(w, utils.CreateSessionCookies(session.ID))
+				http.SetCookie(w, utils.CreateBlankSessionCookie())
 				next.ServeHTTP(w, r)
 				return
 			}

@@ -13,7 +13,9 @@ import (
 
 func loadRoutes(q *db.Queries) *chi.Mux {
 	router := chi.NewRouter()
-	mw := &m.Middleware{}
+	mw := &m.Middleware{
+		Queries: q,
+	}
 	// router.Use(mw.CSRFProtection)
 	router.Use(mw.SetContentType)
 	router.Use(mw.ValidateSessionCookie)
