@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -14,6 +15,13 @@ import (
 	db "github.com/punpundada/shelfMaster/internals/db/sqlc"
 	"golang.org/x/crypto/bcrypt"
 )
+
+type SuccessResponse struct {
+	IsSuccess bool   `json:"is_success"`
+	Message   string `json:"message"`
+	Code      int    `json:"code"`
+	Result    any    `json:"result"`
+}
 
 func HashString(str string) (string, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(str), bcrypt.DefaultCost)
@@ -43,12 +51,12 @@ func VerifyRequestOrigin(origin string, hosts []string) bool {
 	return false
 }
 
-func ValidateSession(ctx context.Context, queries *db.Queries, sessionId string) (*db.Session, *db.Librarian, error) {
+func ValidateSession(ctx context.Context, queries *db.Queries, sessionId string) (*db.Session, *db.User, error) {
 	session, err := queries.GetSessionById(ctx, sessionId)
 	if err != nil {
 		return nil, nil, err
 	}
-	librarian, err := queries.GetLibrarianById(ctx, session.UserID)
+	user, err := queries.GetUserById(ctx, session.UserID)
 
 	if err != nil {
 		return nil, nil, err
@@ -56,7 +64,7 @@ func ValidateSession(ctx context.Context, queries *db.Queries, sessionId string)
 	if time.Now().After(session.ExpiresAt.Time) {
 		session.Fresh = pgtype.Bool{Bool: false, Valid: true}
 	}
-	return &session, &librarian, nil
+	return &session, &user, nil
 }
 
 func CreateSessionCookies(value string) *http.Cookie {
@@ -116,4 +124,20 @@ func WriteErrorResponse(w http.ResponseWriter, code int, message string, details
 	if err := json.NewEncoder(w).Encode(errorResponse); err != nil {
 		http.Error(w, "Failed to generate error response", http.StatusInternalServerError)
 	}
+}
+
+func GetUserFromContext(cxt context.Context) (*db.User, error) {
+	user, ok := cxt.Value(db.RoleTypeUSER).(db.User)
+	if !ok {
+		return nil, fmt.Errorf("user not found")
+	}
+	return &user, nil
+}
+
+func GetSessionFromContext(ctx context.Context) (*db.Session, error) {
+	session, ok := ctx.Value("SESSION").(db.Session)
+	if !ok {
+		return nil, fmt.Errorf("session not found")
+	}
+	return &session, nil
 }

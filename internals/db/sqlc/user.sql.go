@@ -11,8 +11,40 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createAdmin = `-- name: CreateAdmin :one
+UPDATE users
+    SET role = 'ADMIN' WHERE id = $1 RETURNING id
+`
+
+func (q *Queries) CreateAdmin(ctx context.Context, id int32) (int32, error) {
+	row := q.db.QueryRow(ctx, createAdmin, id)
+	err := row.Scan(&id)
+	return id, err
+}
+
+const getUserByEmail = `-- name: GetUserByEmail :one
+SELECT id, email, password_hash, name, mobile_number, role, library_id, created_at, updated_at FROM users WHERE email = $1
+`
+
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByEmail, email)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.PasswordHash,
+		&i.Name,
+		&i.MobileNumber,
+		&i.Role,
+		&i.LibraryID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getUserById = `-- name: GetUserById :one
-SELECT id, name, mobile_number, role, created_at, updated_at FROM users WHERE id = $1
+SELECT id, email, password_hash, name, mobile_number, role, library_id, created_at, updated_at FROM users WHERE id = $1
 `
 
 func (q *Queries) GetUserById(ctx context.Context, id int32) (User, error) {
@@ -20,9 +52,12 @@ func (q *Queries) GetUserById(ctx context.Context, id int32) (User, error) {
 	var i User
 	err := row.Scan(
 		&i.ID,
+		&i.Email,
+		&i.PasswordHash,
 		&i.Name,
 		&i.MobileNumber,
 		&i.Role,
+		&i.LibraryID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -31,23 +66,35 @@ func (q *Queries) GetUserById(ctx context.Context, id int32) (User, error) {
 
 const saveUser = `-- name: SaveUser :one
 INSERT INTO users (
-    name,mobile_number
-) VALUES ($1,$2) RETURNING id, name, mobile_number, role, created_at, updated_at
+    name,mobile_number,email,password_hash,library_id
+) VALUES ($1,$2,$3,$4,$5) RETURNING id, email, password_hash, name, mobile_number, role, library_id, created_at, updated_at
 `
 
 type SaveUserParams struct {
 	Name         string      `json:"name"`
 	MobileNumber pgtype.Text `json:"mobile_number"`
+	Email        string      `json:"email"`
+	PasswordHash string      `json:"password_hash"`
+	LibraryID    int32       `json:"library_id"`
 }
 
 func (q *Queries) SaveUser(ctx context.Context, arg SaveUserParams) (User, error) {
-	row := q.db.QueryRow(ctx, saveUser, arg.Name, arg.MobileNumber)
+	row := q.db.QueryRow(ctx, saveUser,
+		arg.Name,
+		arg.MobileNumber,
+		arg.Email,
+		arg.PasswordHash,
+		arg.LibraryID,
+	)
 	var i User
 	err := row.Scan(
 		&i.ID,
+		&i.Email,
+		&i.PasswordHash,
 		&i.Name,
 		&i.MobileNumber,
 		&i.Role,
+		&i.LibraryID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

@@ -5,3 +5,5 @@ build:
 
 gen:
 	@docker run --rm -v ${shell pwd}:/src -w /src sqlc/sqlc generate
+test:
+	go test ./...

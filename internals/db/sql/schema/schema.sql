@@ -1,29 +1,3 @@
-CREATE TYPE role_type AS ENUM ('ADMIN', 'USER', 'LIBRARIAN','AUTHOR');
-
-CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY,
-    name text NOT NULL,
-    mobile_number text,
-    role role_type DEFAULT 'USER',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT mobile_number_length_check
-        CHECK (mobile_number IS NULL OR LENGTH(mobile_number) = 10)
-);
-
-CREATE TABLE IF NOT EXISTS sessions(
-    id text PRIMARY KEY,
-    user_id int NOT NULL,
-    expires_at TIMESTAMP NOT NULL,
-    fresh BOOLEAN DEFAULT true,
-
-    CONSTRAINT session_user_fk
-        FOREIGN KEY (user_id)
-        REFERENCES users (id)
-        ON DELETE CASCADE
-);
-
 
 CREATE TABLE IF NOT EXISTS libraries(
     id SERIAL PRIMARY KEY,
@@ -35,24 +9,41 @@ CREATE TABLE IF NOT EXISTS libraries(
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TYPE role_type AS ENUM ('ADMIN', 'USER', 'LIBRARIAN','AUTHOR');
 
-CREATE TABLE IF NOT EXISTS librarians(
-    email text PRIMARY KEY,
-    user_id INT NOT NULL,
+
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    email text NOT NULL,
     password_hash text NOT NULL,
+    name text NOT NULL,
+    mobile_number text,
+    role role_type DEFAULT 'USER',
     library_id int NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT librarian_user_FK
-        FOREIGN KEY (user_id)
-        REFERENCES users (id),
-
-    CONSTRAINT library_librarian_fk
-        FOREIGN KEY (library_id)
-        REFERENCES libraries (id),
+    CONSTRAINT mobile_number_length_check
+        CHECK (mobile_number IS NULL OR LENGTH(mobile_number) = 10),
     CONSTRAINT email_format_check
-        CHECK (email IS NOT NULL AND email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
+        CHECK (email IS NOT NULL AND email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
+    CONSTRAINT user_library_fk
+        FOREIGN KEY (library_id)
+        REFERENCES libraries (id)
+        ON DELETE CASCADE
+);
+
+
+CREATE TABLE IF NOT EXISTS sessions(
+    id text PRIMARY KEY,
+    user_id int NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    fresh BOOLEAN DEFAULT true,
+
+    CONSTRAINT session_user_fk
+        FOREIGN KEY (user_id)
+        REFERENCES users (id)
+        ON DELETE CASCADE
 );
 
 

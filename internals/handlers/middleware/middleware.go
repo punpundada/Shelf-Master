@@ -14,6 +14,12 @@ type Middleware struct {
 	Queries *db.Queries
 }
 
+type Session_const string
+type UserAuth_const string
+
+const Sess Session_const = "session"
+const UserAuth UserAuth_const = "librarian"
+
 func (m *Middleware) CSRFProtection(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
@@ -28,12 +34,6 @@ func (m *Middleware) CSRFProtection(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
-
-type session string
-type librarian string
-
-const Sess session = "session"
-const Libr librarian = "librarian"
 
 func (m *Middleware) ValidateSessionCookie(next http.Handler) http.Handler {
 
@@ -67,7 +67,7 @@ func (m *Middleware) ValidateSessionCookie(next http.Handler) http.Handler {
 			http.SetCookie(w, utils.CreateBlankSessionCookie())
 		}
 		contextWithData := context.WithValue(r.Context(), Sess, session)
-		ctx := context.WithValue(contextWithData, Libr, librarian)
+		ctx := context.WithValue(contextWithData, UserAuth, librarian)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -75,6 +75,15 @@ func (m *Middleware) ValidateSessionCookie(next http.Handler) http.Handler {
 func (m *Middleware) SetContentType(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (m *Middleware) TimeoutRequest(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancle := context.WithTimeout(r.Context(), time.Second*5)
+		defer cancle()
+		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)
 	})
 }

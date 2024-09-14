@@ -20,7 +20,7 @@ type LoginBody struct {
 	Email string `json:"email"`
 }
 
-func (a *AuthService) LoginUser(r *http.Request) (*db.Librarian, *db.Session, error) {
+func (a *AuthService) LoginUser(r *http.Request) (*db.User, *db.Session, error) {
 	var body = LoginBody{}
 	err := json.NewDecoder(r.Body).Decode(&body)
 	defer r.Body.Close()
@@ -31,18 +31,18 @@ func (a *AuthService) LoginUser(r *http.Request) (*db.Librarian, *db.Session, er
 	if (len(body.Email) == 0) || (!utils.IsValidEmail(body.Email)) {
 		return nil, nil, fmt.Errorf("invalid email")
 	}
-	librarian, err := a.Queries.GetUserByEmail(r.Context(), body.Email)
+	user, err := a.Queries.GetUserByEmail(r.Context(), body.Email)
 	if err != nil {
 		return nil, nil, fmt.Errorf("user not found: %v", err)
 	}
 	session, err := a.Queries.SaveSession(r.Context(), db.SaveSessionParams{
-		UserID:    librarian.UserID,
+		UserID:    user.ID,
 		ExpiresAt: pgtype.Timestamp{Time: time.Now().Add(time.Hour * 24 * 14)},
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("error while saving session")
 	}
-	return &librarian, &session, nil
+	return &user, &session, nil
 }
 
 func (a *AuthService) SaveUser(ctx context.Context, user db.SaveUserParams) (db.User, error) {

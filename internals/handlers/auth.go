@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	db "github.com/punpundada/shelfMaster/internals/db/sqlc"
 	"github.com/punpundada/shelfMaster/internals/service"
 	"github.com/punpundada/shelfMaster/internals/utils"
 )
@@ -12,8 +13,16 @@ type Auth struct {
 	service.AuthService
 }
 
+func NewAuth(q *db.Queries) *Auth {
+	return &Auth{
+		AuthService: service.AuthService{
+			Queries: q,
+		},
+	}
+}
+
 func (a *Auth) RegisterUser(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Signup user handler route"))
+	w.Write([]byte(`{"message":"This is Signup user route"}`))
 }
 
 func (a *Auth) LoginUser(w http.ResponseWriter, r *http.Request) {
@@ -22,6 +31,7 @@ func (a *Auth) LoginUser(w http.ResponseWriter, r *http.Request) {
 		utils.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
+
 	http.SetCookie(w, utils.CreateSessionCookies(session.ID))
 	if err = json.NewEncoder(w).Encode(struct {
 		Email string `json:"email"`
