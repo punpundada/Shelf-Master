@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS libraries(
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TYPE role_type AS ENUM ('ADMIN', 'USER', 'LIBRARIAN','AUTHOR');
+CREATE TYPE role_type AS ENUM ('ADMIN', 'USER', 'LIBRARIAN');
 
 
 CREATE TABLE IF NOT EXISTS users (
@@ -34,10 +34,18 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 
+CREATE TABLE IF NOT EXISTS authors (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    biography TEXT,
+    date_of_birth DATE,
+    nationality TEXT
+);
+
 CREATE TABLE IF NOT EXISTS sessions(
     id text PRIMARY KEY,
     user_id int NOT NULL,
-    expires_at TIMESTAMP NOT NULL,
+    expires_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     fresh BOOLEAN DEFAULT true,
 
     CONSTRAINT session_user_fk
@@ -57,7 +65,7 @@ CREATE TABLE IF NOT EXISTS books(
 
     CONSTRAINT book_author
         FOREIGN KEY (authorId)
-        REFERENCES users (id)
+        REFERENCES authors (id)
         ON DELETE SET NULL
 );
 

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/punpundada/shelfMaster/internals/constants"
 	db "github.com/punpundada/shelfMaster/internals/db/sqlc"
 	"github.com/punpundada/shelfMaster/internals/utils"
 )
@@ -13,12 +14,6 @@ import (
 type Middleware struct {
 	Queries *db.Queries
 }
-
-type Session_const string
-type UserAuth_const string
-
-const Sess Session_const = "session"
-const UserAuth UserAuth_const = "librarian"
 
 func (m *Middleware) CSRFProtection(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -43,8 +38,7 @@ func (m *Middleware) ValidateSessionCookie(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		session, librarian, err := utils.ValidateSession(r.Context(), m.Queries, cookie.Value)
-
+		session, user, err := utils.ValidateSession(r.Context(), m.Queries, cookie.Value)
 		if err != nil {
 			http.SetCookie(w, utils.CreateBlankSessionCookie())
 			next.ServeHTTP(w, r)
@@ -66,8 +60,8 @@ func (m *Middleware) ValidateSessionCookie(next http.Handler) http.Handler {
 		if session == nil {
 			http.SetCookie(w, utils.CreateBlankSessionCookie())
 		}
-		contextWithData := context.WithValue(r.Context(), Sess, session)
-		ctx := context.WithValue(contextWithData, UserAuth, librarian)
+		contextWithData := context.WithValue(r.Context(), constants.Session, session)
+		ctx := context.WithValue(contextWithData, constants.User, user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

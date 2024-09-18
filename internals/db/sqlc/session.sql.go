@@ -29,17 +29,18 @@ func (q *Queries) GetSessionById(ctx context.Context, id string) (Session, error
 
 const saveSession = `-- name: SaveSession :one
 INSERT INTO sessions (
-    user_id,expires_at
-) VALUES ($1, $2) RETURNING id, user_id, expires_at, fresh
+    id,user_id,expires_at
+) VALUES ($1, $2,$3) RETURNING id, user_id, expires_at, fresh
 `
 
 type SaveSessionParams struct {
+	ID        string           `json:"id"`
 	UserID    int32            `json:"user_id"`
 	ExpiresAt pgtype.Timestamp `json:"expires_at"`
 }
 
 func (q *Queries) SaveSession(ctx context.Context, arg SaveSessionParams) (Session, error) {
-	row := q.db.QueryRow(ctx, saveSession, arg.UserID, arg.ExpiresAt)
+	row := q.db.QueryRow(ctx, saveSession, arg.ID, arg.UserID, arg.ExpiresAt)
 	var i Session
 	err := row.Scan(
 		&i.ID,

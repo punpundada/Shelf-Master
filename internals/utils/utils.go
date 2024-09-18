@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
+	"net/smtp"
 	"net/url"
 	"regexp"
 	"strings"
@@ -12,6 +14,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/punpundada/shelfMaster/internals/config"
+	"github.com/punpundada/shelfMaster/internals/constants"
 	db "github.com/punpundada/shelfMaster/internals/db/sqlc"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -127,17 +130,47 @@ func WriteErrorResponse(w http.ResponseWriter, code int, message string, details
 }
 
 func GetUserFromContext(cxt context.Context) (*db.User, error) {
-	user, ok := cxt.Value(db.RoleTypeUSER).(db.User)
+	user, ok := cxt.Value(constants.User).(*db.User)
 	if !ok {
 		return nil, fmt.Errorf("user not found")
 	}
-	return &user, nil
+	return user, nil
 }
 
 func GetSessionFromContext(ctx context.Context) (*db.Session, error) {
-	session, ok := ctx.Value("SESSION").(db.Session)
+	session, ok := ctx.Value(constants.Session).(*db.Session)
 	if !ok {
 		return nil, fmt.Errorf("session not found")
 	}
-	return &session, nil
+	return session, nil
+}
+
+func SendVerificationEmail(email string) error {
+	auth := smtp.PlainAuth("", config.GetConfig().SMTP_USERNAME, config.GetConfig().SMTP_PASSWORD, config.GetConfig().SMTP_HOST)
+	from := config.GetConfig().SMTP_EMAIL
+	to := []string{email}
+	message := []byte(fmt.Sprintf("To: %s\r\n", email) +
+
+		fmt.Sprintf("From: %s\r\n", from) +
+
+		"\r\n" +
+
+		"Subject: Email Verification\r\n" +
+
+		"\r\n" +
+
+		fmt.Sprintf("Here's the OTP for your email verification:%s\r\n", GenerateRandomDigits(6)))
+
+	smtpUrl := config.GetConfig().SMTP_HOST + ":" + config.GetConfig().SMTP_PORT
+	err := smtp.SendMail(smtpUrl, auth, from, to, message)
+	return err
+}
+
+func GenerateRandomDigits(n int) string {
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
+	digits := ""
+	for i := 0; i < n; i++ {
+		digits += fmt.Sprintf("%d", rnd.Intn(10))
+	}
+	return digits
 }

@@ -1,7 +1,7 @@
 -- name: SaveSession :one
 INSERT INTO sessions (
-    user_id,expires_at
-) VALUES ($1, $2) RETURNING *;
+    id,user_id,expires_at
+) VALUES ($1, $2,$3) RETURNING *;
 
 -- name: GetSessionById :one
 SELECT * FROM sessions WHERE id = $1;

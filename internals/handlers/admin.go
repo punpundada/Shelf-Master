@@ -25,6 +25,7 @@ func NewAdmin(q *db.Queries) *Admin {
 }
 
 func (a *Admin) CreateNewAdmin(w http.ResponseWriter, r *http.Request) {
+
 	pathId, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
 		utils.WriteErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("error parsing id: %s", err.Error()))

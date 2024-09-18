@@ -17,7 +17,6 @@ const (
 	RoleTypeADMIN     RoleType = "ADMIN"
 	RoleTypeUSER      RoleType = "USER"
 	RoleTypeLIBRARIAN RoleType = "LIBRARIAN"
-	RoleTypeAUTHOR    RoleType = "AUTHOR"
 )
 
 func (e *RoleType) Scan(src interface{}) error {
@@ -53,6 +52,14 @@ func (ns NullRoleType) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.RoleType), nil
+}
+
+type Author struct {
+	ID          int32       `json:"id"`
+	Name        string      `json:"name"`
+	Biography   pgtype.Text `json:"biography"`
+	DateOfBirth pgtype.Date `json:"date_of_birth"`
+	Nationality pgtype.Text `json:"nationality"`
 }
 
 type Book struct {
