@@ -78,6 +78,14 @@ type BookInventory struct {
 	AvailableQuantity int32 `json:"available_quantity"`
 }
 
+type EmailVerification struct {
+	ID        int32       `json:"id"`
+	Code      string      `json:"code"`
+	UserID    int32       `json:"user_id"`
+	Email     string      `json:"email"`
+	ExpiresAt pgtype.Date `json:"expires_at"`
+}
+
 type Library struct {
 	ID          int32            `json:"id"`
 	Name        string           `json:"name"`
@@ -96,15 +104,16 @@ type Session struct {
 }
 
 type User struct {
-	ID           int32            `json:"id"`
-	Email        string           `json:"email"`
-	PasswordHash string           `json:"password_hash"`
-	Name         string           `json:"name"`
-	MobileNumber pgtype.Text      `json:"mobile_number"`
-	Role         NullRoleType     `json:"role"`
-	LibraryID    int32            `json:"library_id"`
-	CreatedAt    pgtype.Timestamp `json:"created_at"`
-	UpdatedAt    pgtype.Timestamp `json:"updated_at"`
+	ID            int32            `json:"id"`
+	Email         string           `json:"email"`
+	PasswordHash  string           `json:"password_hash"`
+	Name          string           `json:"name"`
+	MobileNumber  pgtype.Text      `json:"mobile_number"`
+	Role          NullRoleType     `json:"role"`
+	LibraryID     int32            `json:"library_id"`
+	CreatedAt     pgtype.Timestamp `json:"created_at"`
+	UpdatedAt     pgtype.Timestamp `json:"updated_at"`
+	EmailVerified pgtype.Bool      `json:"email_verified"`
 }
 
 type UserBook struct {

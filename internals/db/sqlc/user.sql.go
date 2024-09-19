@@ -23,7 +23,7 @@ func (q *Queries) CreateAdmin(ctx context.Context, id int32) (int32, error) {
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, password_hash, name, mobile_number, role, library_id, created_at, updated_at FROM users WHERE email = $1
+SELECT id, email, password_hash, name, mobile_number, role, library_id, created_at, updated_at, email_verified FROM users WHERE email = $1
 `
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
@@ -39,12 +39,13 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.LibraryID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.EmailVerified,
 	)
 	return i, err
 }
 
 const getUserById = `-- name: GetUserById :one
-SELECT id, email, password_hash, name, mobile_number, role, library_id, created_at, updated_at FROM users WHERE id = $1
+SELECT id, email, password_hash, name, mobile_number, role, library_id, created_at, updated_at, email_verified FROM users WHERE id = $1
 `
 
 func (q *Queries) GetUserById(ctx context.Context, id int32) (User, error) {
@@ -60,6 +61,7 @@ func (q *Queries) GetUserById(ctx context.Context, id int32) (User, error) {
 		&i.LibraryID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.EmailVerified,
 	)
 	return i, err
 }
@@ -67,7 +69,7 @@ func (q *Queries) GetUserById(ctx context.Context, id int32) (User, error) {
 const saveUser = `-- name: SaveUser :one
 INSERT INTO users (
     name,mobile_number,email,password_hash,library_id
-) VALUES ($1,$2,$3,$4,$5) RETURNING id, email, password_hash, name, mobile_number, role, library_id, created_at, updated_at
+) VALUES ($1,$2,$3,$4,$5) RETURNING id, email, password_hash, name, mobile_number, role, library_id, created_at, updated_at, email_verified
 `
 
 type SaveUserParams struct {
@@ -97,6 +99,7 @@ func (q *Queries) SaveUser(ctx context.Context, arg SaveUserParams) (User, error
 		&i.LibraryID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.EmailVerified,
 	)
 	return i, err
 }

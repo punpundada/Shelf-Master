@@ -168,9 +168,9 @@ func SendVerificationEmail(email string) error {
 
 func GenerateRandomDigits(n int) string {
 	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
-	digits := ""
+	digits := strings.Builder{}
 	for i := 0; i < n; i++ {
-		digits += fmt.Sprintf("%d", rnd.Intn(10))
+		digits.WriteString(fmt.Sprintf("%d", rnd.Intn(10)))
 	}
-	return digits
+	return digits.String()
 }

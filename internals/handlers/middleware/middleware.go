@@ -44,6 +44,7 @@ func (m *Middleware) ValidateSessionCookie(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
+
 		if session != nil && session.Fresh.Bool {
 			_, err := m.Queries.UpdateSessionById(r.Context(), db.UpdateSessionByIdParams{
 				ExpiresAt: pgtype.Timestamp{Time: time.Now().Add(time.Hour * 24 * 14), Valid: true},
@@ -60,6 +61,7 @@ func (m *Middleware) ValidateSessionCookie(next http.Handler) http.Handler {
 		if session == nil {
 			http.SetCookie(w, utils.CreateBlankSessionCookie())
 		}
+		user.PasswordHash = ""
 		contextWithData := context.WithValue(r.Context(), constants.Session, session)
 		ctx := context.WithValue(contextWithData, constants.User, user)
 		next.ServeHTTP(w, r.WithContext(ctx))
