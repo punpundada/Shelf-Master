@@ -1,6 +1,7 @@
 package application
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -8,6 +9,7 @@ import (
 	db "github.com/punpundada/shelfMaster/internals/db/sqlc"
 	"github.com/punpundada/shelfMaster/internals/handlers"
 	m "github.com/punpundada/shelfMaster/internals/handlers/middleware"
+	"github.com/punpundada/shelfMaster/internals/utils"
 )
 
 func loadRoutes(q *db.Queries) *chi.Mux {
@@ -21,7 +23,13 @@ func loadRoutes(q *db.Queries) *chi.Mux {
 	router.Use(middleware.Logger)
 	// router.Use(mw.TimeoutRequest)
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`{"message":"Hello World"}`))
+		user, err := utils.GetUserFromContext(r.Context())
+		if err == nil {
+			data, err := json.Marshal(&user)
+			if err == nil {
+				w.Write(data)
+			}
+		}
 	})
 	router.Route("/auth", loadAuthRoutes(q))
 	router.Route("/admin", loadAdminRoutes(q))
