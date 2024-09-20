@@ -145,24 +145,34 @@ func GetSessionFromContext(ctx context.Context) (*db.Session, error) {
 	return session, nil
 }
 
-func SendVerificationEmail(email string) error {
+func SendVerificationEmail(email string, code string) error {
 	auth := smtp.PlainAuth("", config.GetConfig().SMTP_USERNAME, config.GetConfig().SMTP_PASSWORD, config.GetConfig().SMTP_HOST)
 	from := config.GetConfig().SMTP_EMAIL
 	to := []string{email}
-	message := []byte(fmt.Sprintf("To: %s\r\n", email) +
 
-		fmt.Sprintf("From: %s\r\n", from) +
+	headers := make(map[string]string)
+	headers["From"] = from
+	headers["To"] = email
+	headers["Subject"] = "Email Verification"
+	headers["MIME-Version"] = "1.0"
+	headers["Content-Type"] = "text/html; charset=\"UTF-8\""
 
-		"\r\n" +
+	htmlBody := fmt.Sprintf(`
+		<html>
+			<body>
+				<p>Here's the OTP for your email verification:</p>
+				<h2>%s</h2>
+			</body>
+		</html>`, code)
 
-		"Subject: Email Verification\r\n" +
-
-		"\r\n" +
-
-		fmt.Sprintf("Here's the OTP for your email verification:%s\r\n", GenerateRandomDigits(6)))
+	var message string
+	for k, v := range headers {
+		message += fmt.Sprintf("%s: %s\r\n", k, v)
+	}
+	message += "\r\n" + htmlBody
 
 	smtpUrl := config.GetConfig().SMTP_HOST + ":" + config.GetConfig().SMTP_PORT
-	err := smtp.SendMail(smtpUrl, auth, from, to, message)
+	err := smtp.SendMail(smtpUrl, auth, from, to, []byte(message))
 	return err
 }
 
@@ -173,4 +183,11 @@ func GenerateRandomDigits(n int) string {
 		digits.WriteString(fmt.Sprintf("%d", rnd.Intn(10)))
 	}
 	return digits.String()
+}
+
+func IsStrongPassword(password string) (bool, string) {
+	if len(password) < 6 {
+		return false, "password must be more than 5 characters long"
+	}
+	return true, ""
 }

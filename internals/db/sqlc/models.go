@@ -76,6 +76,7 @@ type BookInventory struct {
 	BookID            int32 `json:"book_id"`
 	TotalQuantity     int32 `json:"total_quantity"`
 	AvailableQuantity int32 `json:"available_quantity"`
+	LibraryID         int32 `json:"library_id"`
 }
 
 type EmailVerification struct {
@@ -110,7 +111,6 @@ type User struct {
 	Name          string           `json:"name"`
 	MobileNumber  pgtype.Text      `json:"mobile_number"`
 	Role          NullRoleType     `json:"role"`
-	LibraryID     int32            `json:"library_id"`
 	CreatedAt     pgtype.Timestamp `json:"created_at"`
 	UpdatedAt     pgtype.Timestamp `json:"updated_at"`
 	EmailVerified pgtype.Bool      `json:"email_verified"`

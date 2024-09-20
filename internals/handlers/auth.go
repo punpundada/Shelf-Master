@@ -1,12 +1,11 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	db "github.com/punpundada/shelfMaster/internals/db/sqlc"
 	"github.com/punpundada/shelfMaster/internals/service"
@@ -26,8 +25,29 @@ func NewAuth(q *db.Queries) *Auth {
 }
 
 func (a *Auth) RegisterUser(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(utils.SendVerificationEmail("prajwalparashkar100@gmail.com"))
-	w.Write([]byte(`{"message":"This is Signup user route"}`))
+	user, err := a.AuthService.SaveUser(r)
+	if err != nil {
+		utils.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	session, err := a.Queries.SaveSession(r.Context(), db.SaveSessionParams{
+		ID:        uuid.New().String(),
+		UserID:    user.ID,
+		ExpiresAt: pgtype.Timestamp{Time: time.Now().Add(15 * time.Minute), Valid: true},
+	})
+
+	if err != nil {
+		utils.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	sessionCooke := utils.CreateSessionCookies(session.ID)
+	http.SetCookie(w, sessionCooke)
+	err = json.NewEncoder(w).Encode(struct {
+		UserId int32 `json:"user_id"`
+	}{UserId: user.ID})
+	if err != nil {
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
+	}
 }
 
 func (a *Auth) LoginUser(w http.ResponseWriter, r *http.Request) {
@@ -43,23 +63,4 @@ func (a *Auth) LoginUser(w http.ResponseWriter, r *http.Request) {
 		utils.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-}
-
-func generateEmailVerificationCode(ctx context.Context, userId int32, email string, q *db.Queries) (string, error) {
-	_, err := q.DeleteEmailVerificationByUserId(ctx, userId)
-	if err != nil {
-		return "", fmt.Errorf("error deleting verifications: %v", err)
-	}
-
-	code := utils.GenerateRandomDigits(6)
-	_, err = q.SaveEmailVerification(ctx, db.SaveEmailVerificationParams{
-		Code:      code,
-		UserID:    userId,
-		Email:     email,
-		ExpiresAt: pgtype.Date{Time: time.Now().Add(15 * time.Minute), Valid: true},
-	})
-	if err != nil {
-		return "", fmt.Errorf("error saving varification code: %v", err)
-	}
-	return code, nil
 }

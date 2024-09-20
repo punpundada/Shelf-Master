@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -56,6 +57,66 @@ func (a *AuthService) LoginUser(r *http.Request) (*db.User, *db.Session, error) 
 	return &user, &session, nil
 }
 
-func (a *AuthService) SaveUser(ctx context.Context, user db.SaveUserParams) (db.User, error) {
-	return a.Queries.SaveUser(ctx, user)
+func (a *AuthService) SaveUser(r *http.Request) (*db.User, error) {
+	var body db.SaveUserParams
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding body: %v", err)
+	}
+	defer r.Body.Close()
+	if isValidEmail := utils.IsValidEmail(body.Email); !isValidEmail {
+		return nil, fmt.Errorf("invalid email")
+	}
+	if isStrongPassword, msg := utils.IsStrongPassword(body.PasswordHash); !isStrongPassword {
+		return nil, fmt.Errorf("inscure password: %s", msg)
+	}
+	hashedPassword, err := utils.HashString(body.PasswordHash)
+	if err != nil {
+		return nil, fmt.Errorf("error hashing password: %v", err)
+	}
+	body.PasswordHash = hashedPassword
+
+	user, err := a.Queries.SaveUser(r.Context(), body)
+	if err != nil {
+		if strings.Contains(err.Error(), "email_unique") {
+			user, err := a.Queries.GetUserByEmail(r.Context(), body.Email)
+			if err != nil {
+				return nil, fmt.Errorf("no user found: %v", err)
+			}
+			if !user.EmailVerified.Bool {
+				return nil, fmt.Errorf("email already in use")
+			}
+		}
+		return nil, fmt.Errorf("error saving user: %v", err)
+	}
+	verificationCode, err := generateEmailVerificationCode(r.Context(), user.ID, user.Email, a.Queries)
+	if err != nil {
+		return nil, fmt.Errorf("error generating verification code or saving code: %v", err)
+	}
+	err = utils.SendVerificationEmail(user.Email, verificationCode)
+	if err != nil {
+		return nil, fmt.Errorf("error sending email: %v", err)
+	}
+	return &user, nil
+}
+
+func generateEmailVerificationCode(ctx context.Context, userId int32, email string, q *db.Queries) (string, error) {
+	_, err := q.DeleteEmailVerificationByUserId(ctx, userId)
+	if err != nil {
+		if err.Error() != "no rows in result set" {
+			return "", fmt.Errorf("error deleting verifications: %v", err)
+		}
+	}
+
+	code := utils.GenerateRandomDigits(6)
+	_, err = q.SaveEmailVerification(ctx, db.SaveEmailVerificationParams{
+		Code:      code,
+		UserID:    userId,
+		Email:     email,
+		ExpiresAt: pgtype.Date{Time: time.Now().Add(15 * time.Minute), Valid: true},
+	})
+	if err != nil {
+		return "", fmt.Errorf("error saving varification code: %v", err)
+	}
+	return code, nil
 }

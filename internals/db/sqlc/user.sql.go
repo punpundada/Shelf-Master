@@ -23,7 +23,7 @@ func (q *Queries) CreateAdmin(ctx context.Context, id int32) (int32, error) {
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, password_hash, name, mobile_number, role, library_id, created_at, updated_at, email_verified FROM users WHERE email = $1
+SELECT id, email, password_hash, name, mobile_number, role, created_at, updated_at, email_verified FROM users WHERE email = $1
 `
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
@@ -36,7 +36,6 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.Name,
 		&i.MobileNumber,
 		&i.Role,
-		&i.LibraryID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.EmailVerified,
@@ -45,7 +44,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 }
 
 const getUserById = `-- name: GetUserById :one
-SELECT id, email, password_hash, name, mobile_number, role, library_id, created_at, updated_at, email_verified FROM users WHERE id = $1
+SELECT id, email, password_hash, name, mobile_number, role, created_at, updated_at, email_verified FROM users WHERE id = $1
 `
 
 func (q *Queries) GetUserById(ctx context.Context, id int32) (User, error) {
@@ -58,7 +57,6 @@ func (q *Queries) GetUserById(ctx context.Context, id int32) (User, error) {
 		&i.Name,
 		&i.MobileNumber,
 		&i.Role,
-		&i.LibraryID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.EmailVerified,
@@ -68,8 +66,8 @@ func (q *Queries) GetUserById(ctx context.Context, id int32) (User, error) {
 
 const saveUser = `-- name: SaveUser :one
 INSERT INTO users (
-    name,mobile_number,email,password_hash,library_id
-) VALUES ($1,$2,$3,$4,$5) RETURNING id, email, password_hash, name, mobile_number, role, library_id, created_at, updated_at, email_verified
+    name,mobile_number,email,password_hash
+) VALUES ($1,$2,$3,$4) RETURNING id, email, password_hash, name, mobile_number, role, created_at, updated_at, email_verified
 `
 
 type SaveUserParams struct {
@@ -77,7 +75,6 @@ type SaveUserParams struct {
 	MobileNumber pgtype.Text `json:"mobile_number"`
 	Email        string      `json:"email"`
 	PasswordHash string      `json:"password_hash"`
-	LibraryID    int32       `json:"library_id"`
 }
 
 func (q *Queries) SaveUser(ctx context.Context, arg SaveUserParams) (User, error) {
@@ -86,7 +83,6 @@ func (q *Queries) SaveUser(ctx context.Context, arg SaveUserParams) (User, error
 		arg.MobileNumber,
 		arg.Email,
 		arg.PasswordHash,
-		arg.LibraryID,
 	)
 	var i User
 	err := row.Scan(
@@ -96,7 +92,6 @@ func (q *Queries) SaveUser(ctx context.Context, arg SaveUserParams) (User, error
 		&i.Name,
 		&i.MobileNumber,
 		&i.Role,
-		&i.LibraryID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.EmailVerified,

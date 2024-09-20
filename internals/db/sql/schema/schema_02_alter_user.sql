@@ -12,3 +12,10 @@ CREATE TABLE email_verification (
         FOREIGN KEY (user_id)
         REFERENCES users (id)
 );
+
+ALTER TABLE users
+ADD CONSTRAINT email_unique UNIQUE (email);
+
+ALTER TABLE users DROP COLUMN library_id;
+
+ALTER TABLE book_inventory ADD COLUMN library_id INT NOT NULL;
