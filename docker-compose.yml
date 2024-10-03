@@ -11,3 +11,26 @@ services:
       - "${POSTGRES_PORT}:5432"
     volumes:
       - ~/volumes/shelfmaster:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}'"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  # backend:
+  #   container_name: shelfmaster_backend
+  #   build:
+  #     context: .
+  #     dockerfile: dockerfile
+  #     target: development
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #   env_file:
+  #     - .env
+  #   ports:
+  #     - "${PORT}:${PORT}"
+  #   volumes:
+  #     - /internals:/usr/src/app/internals
+    

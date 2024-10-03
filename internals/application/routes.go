@@ -6,13 +6,14 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/jackc/pgx/v5"
 	db "github.com/punpundada/shelfMaster/internals/db/sqlc"
 	"github.com/punpundada/shelfMaster/internals/handlers"
 	m "github.com/punpundada/shelfMaster/internals/handlers/middleware"
 	"github.com/punpundada/shelfMaster/internals/utils"
 )
 
-func loadRoutes(q *db.Queries) *chi.Mux {
+func loadRoutes(q *db.Queries, Conn *pgx.Conn) *chi.Mux {
 	router := chi.NewRouter()
 	mw := &m.Middleware{
 		Queries: q,
@@ -31,13 +32,13 @@ func loadRoutes(q *db.Queries) *chi.Mux {
 			}
 		}
 	})
-	router.Route("/auth", loadAuthRoutes(q))
+	router.Route("/auth", loadAuthRoutes(q, Conn))
 	router.Route("/admin", loadAdminRoutes(q))
 	return router
 }
 
-func loadAuthRoutes(q *db.Queries) func(chi.Router) {
-	authRoutess := handlers.NewAuth(q)
+func loadAuthRoutes(q *db.Queries, conn *pgx.Conn) func(chi.Router) {
+	authRoutess := handlers.NewAuth(q, conn)
 
 	return func(router chi.Router) {
 		router.Post("/login", authRoutess.LoginUser)

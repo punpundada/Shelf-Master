@@ -9,9 +9,11 @@ import (
 	"net/smtp"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/punpundada/shelfMaster/internals/config"
 	"github.com/punpundada/shelfMaster/internals/constants"
@@ -129,6 +131,16 @@ func WriteErrorResponse(w http.ResponseWriter, code int, message string, details
 	}
 }
 
+func WriteResponse(w http.ResponseWriter, code int, message string, result any) error {
+	w.WriteHeader(code)
+	return json.NewEncoder(w).Encode(map[string]any{
+		"success": true,
+		"message": message,
+		"result":  result,
+		"code":    code,
+	})
+}
+
 func GetUserFromContext(cxt context.Context) (*db.User, error) {
 	user, ok := cxt.Value(constants.User).(*db.User)
 	if !ok {
@@ -180,14 +192,70 @@ func GenerateRandomDigits(n int) string {
 	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 	digits := strings.Builder{}
 	for i := 0; i < n; i++ {
-		digits.WriteString(fmt.Sprintf("%d", rnd.Intn(10)))
+		digits.WriteString(strconv.Itoa(rnd.Intn(10)))
 	}
 	return digits.String()
 }
 
 func IsStrongPassword(password string) (bool, string) {
 	if len(password) < 6 {
-		return false, "password must be more than 5 characters long"
+		return false, "password must contain at least 6 characters"
+	}
+	uppercase, _ := regexp.MatchString(`[A-Z]`, password)
+	if !uppercase {
+		return false, "password must contain at least one uppercase letter"
+	}
+	lowercase, _ := regexp.MatchString(`[a-z]`, password)
+	if !lowercase {
+		return false, "password must contain at least one lowercase letter"
+	}
+	digit, _ := regexp.MatchString(`[0-9]`, password)
+	if !digit {
+		return false, "password must contain at least one digit"
+	}
+	specialChar, _ := regexp.MatchString(`[!@#\$%\^&\*\(\)_\+\-=\[\]{};':"\\|,.<>\/?~]`, password)
+	if !specialChar {
+		return false, "password must contain at least one special character"
 	}
 	return true, ""
+}
+
+func VerifyVerificationCode(ctx context.Context, db pgx.Tx, queries *db.Queries, user *db.User, code string) (bool, error) {
+	tx, err := db.Begin(ctx)
+	if err != nil {
+		return false, err
+	}
+	defer tx.Rollback(ctx)
+
+	qtx := queries.WithTx(tx)
+	dbCode, err := qtx.GetEmailVerificationByUserId(ctx, user.ID)
+	if err != nil {
+		tx.Commit(ctx)
+		return false, fmt.Errorf("user not found")
+	}
+	_, err = qtx.DeleteEmailVerificationByUserId(ctx, user.ID)
+	if err != nil {
+		tx.Rollback(ctx)
+		return false, fmt.Errorf("code was not deleted")
+	}
+	tx.Commit(ctx)
+	isNotExpired := isWithinExpirationDate(dbCode.ExpiresAt.Time)
+	if !isNotExpired {
+		return false, nil
+	}
+	if dbCode.Email != user.Email {
+		return false, nil
+	}
+	return true, nil
+}
+
+func isWithinExpirationDate(expirationDate time.Time) bool {
+	currentTime := time.Now()
+	return expirationDate.After(currentTime)
+}
+
+func ParseJSON(request *http.Request, body any) error {
+	err := json.NewDecoder(request.Body).Decode(body)
+	defer request.Body.Close()
+	return err
 }

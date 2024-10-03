@@ -22,6 +22,34 @@ func (q *Queries) DeleteEmailVerificationByUserId(ctx context.Context, userID in
 	return id, err
 }
 
+const deleteFromEmailVerificationByUserId = `-- name: DeleteFromEmailVerificationByUserId :one
+DELETE FROM email_verification where user_id = $1 RETURNING id
+`
+
+func (q *Queries) DeleteFromEmailVerificationByUserId(ctx context.Context, userID int32) (int32, error) {
+	row := q.db.QueryRow(ctx, deleteFromEmailVerificationByUserId, userID)
+	var id int32
+	err := row.Scan(&id)
+	return id, err
+}
+
+const getEmailVerificationByUserId = `-- name: GetEmailVerificationByUserId :one
+SELECT id, code, user_id, email, expires_at FROM email_verification where user_id = $1
+`
+
+func (q *Queries) GetEmailVerificationByUserId(ctx context.Context, userID int32) (EmailVerification, error) {
+	row := q.db.QueryRow(ctx, getEmailVerificationByUserId, userID)
+	var i EmailVerification
+	err := row.Scan(
+		&i.ID,
+		&i.Code,
+		&i.UserID,
+		&i.Email,
+		&i.ExpiresAt,
+	)
+	return i, err
+}
+
 const saveEmailVerification = `-- name: SaveEmailVerification :one
 INSERT INTO email_verification (
     code,user_id,email,expires_at
