@@ -43,6 +43,7 @@ func loadAuthRoutes(q *db.Queries, conn *pgx.Conn) func(chi.Router) {
 	return func(router chi.Router) {
 		router.Post("/login", authRoutess.LoginUser)
 		router.Post("/signup", authRoutess.RegisterUser)
+		router.Post("/email-verification", authRoutess.EmailVerification)
 	}
 }
 

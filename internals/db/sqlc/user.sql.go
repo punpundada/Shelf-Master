@@ -98,3 +98,20 @@ func (q *Queries) SaveUser(ctx context.Context, arg SaveUserParams) (User, error
 	)
 	return i, err
 }
+
+const updateUsersEmail_verification = `-- name: UpdateUsersEmail_verification :one
+UPDATE users
+    set email_verified = $1 WHERE id = $2 RETURNING id
+`
+
+type UpdateUsersEmail_verificationParams struct {
+	EmailVerified pgtype.Bool `json:"email_verified"`
+	ID            int32       `json:"id"`
+}
+
+func (q *Queries) UpdateUsersEmail_verification(ctx context.Context, arg UpdateUsersEmail_verificationParams) (int32, error) {
+	row := q.db.QueryRow(ctx, updateUsersEmail_verification, arg.EmailVerified, arg.ID)
+	var id int32
+	err := row.Scan(&id)
+	return id, err
+}

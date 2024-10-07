@@ -72,12 +72,13 @@ func (a *Auth) EmailVerification(w http.ResponseWriter, r *http.Request) {
 	body := struct {
 		Code string `json:"code"`
 	}{}
-	err := utils.ParseJSON(r, &body)
-	if err != nil {
+	if err := utils.ParseJSON(r, &body); err != nil {
 		utils.WriteErrorResponse(w, http.StatusUnauthorized, "error decoding json"+err.Error())
 		return
 	}
+
 	ses, err := utils.GetSessionFromContext(r.Context())
+
 	if err != nil {
 		utils.WriteErrorResponse(w, http.StatusUnauthorized, "Invalid session: "+err.Error())
 		return
@@ -102,8 +103,23 @@ func (a *Auth) EmailVerification(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !isValidCode {
-		utils.WriteErrorResponse(w, http.StatusUnauthorized, "invalid code")
+		utils.WriteErrorResponse(w, http.StatusBadRequest, "invalid code")
 		return
 	}
-
+	_, err = a.Queries.UpdateUsersEmail_verification(r.Context(), db.UpdateUsersEmail_verificationParams{
+		EmailVerified: pgtype.Bool{Bool: true, Valid: true},
+		ID:            user.ID,
+	})
+	if err != nil {
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Error updatin users: "+err.Error())
+		return
+	}
+	session, err := a.Queries.SaveSession(r.Context(), *utils.NewSaveSessionAttrs(user.ID))
+	if err != nil {
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Error saving session: "+err.Error())
+		return
+	}
+	sessionCookie := utils.CreateSessionCookies(session.ID)
+	w.WriteHeader(http.StatusOK)
+	http.SetCookie(w, sessionCookie)
 }

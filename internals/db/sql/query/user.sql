@@ -12,3 +12,7 @@ SELECT * FROM users WHERE email = $1;
 -- name: CreateAdmin :one
 UPDATE users
     SET role = 'ADMIN' WHERE id = $1 RETURNING id;
+
+-- name: UpdateUsersEmail_verification :one
+UPDATE users
+    set email_verified = $1 WHERE id = $2 RETURNING id;

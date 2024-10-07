@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/punpundada/shelfMaster/internals/config"
@@ -239,8 +240,8 @@ func VerifyVerificationCode(ctx context.Context, db pgx.Tx, queries *db.Queries,
 		return false, fmt.Errorf("code was not deleted")
 	}
 	tx.Commit(ctx)
-	isNotExpired := isWithinExpirationDate(dbCode.ExpiresAt.Time)
-	if !isNotExpired {
+	isvalid := isWithinExpirationDate(dbCode.ExpiresAt.Time)
+	if !isvalid {
 		return false, nil
 	}
 	if dbCode.Email != user.Email {
@@ -251,11 +252,26 @@ func VerifyVerificationCode(ctx context.Context, db pgx.Tx, queries *db.Queries,
 
 func isWithinExpirationDate(expirationDate time.Time) bool {
 	currentTime := time.Now()
-	return expirationDate.After(currentTime)
+	return !expirationDate.After(currentTime)
 }
 
 func ParseJSON(request *http.Request, body any) error {
 	err := json.NewDecoder(request.Body).Decode(body)
 	defer request.Body.Close()
 	return err
+}
+
+func MarshalJson(w http.ResponseWriter, body any) error {
+	return json.NewEncoder(w).Encode(&body)
+}
+
+func NewSaveSessionAttrs(userId int32) *db.SaveSessionParams {
+	return &db.SaveSessionParams{
+		ID:     uuid.New().String(),
+		UserID: userId,
+		ExpiresAt: pgtype.Timestamp{
+			Time:  time.Now().Add(time.Hour * 24 * 2),
+			Valid: true,
+		},
+	}
 }
