@@ -32,6 +32,7 @@ type Config struct {
 	SMTP_HOST         string
 	SMTP_PORT         string
 	SMTP_EMAIL        string
+	FRONTEND_URL      string
 }
 
 func GetConfig() *Config {
@@ -49,5 +50,6 @@ func GetConfig() *Config {
 		SMTP_HOST:         getEnv("SMTP_HOST"),
 		SMTP_PORT:         getEnv("SMTP_PORT"),
 		SMTP_EMAIL:        getEnv("SMTP_EMAIL"),
+		FRONTEND_URL:      getEnv("FRONTEND_URL"),
 	}
 }

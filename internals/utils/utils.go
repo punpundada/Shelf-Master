@@ -2,6 +2,9 @@ package utils
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/base32"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -9,9 +12,12 @@ import (
 	"net/smtp"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/punpundada/shelfMaster/internals/config"
 	"github.com/punpundada/shelfMaster/internals/constants"
@@ -129,6 +135,16 @@ func WriteErrorResponse(w http.ResponseWriter, code int, message string, details
 	}
 }
 
+func WriteResponse(w http.ResponseWriter, code int, message string, result any) error {
+	w.WriteHeader(code)
+	return json.NewEncoder(w).Encode(map[string]any{
+		"success": true,
+		"message": message,
+		"result":  result,
+		"code":    code,
+	})
+}
+
 func GetUserFromContext(cxt context.Context) (*db.User, error) {
 	user, ok := cxt.Value(constants.User).(*db.User)
 	if !ok {
@@ -180,14 +196,175 @@ func GenerateRandomDigits(n int) string {
 	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 	digits := strings.Builder{}
 	for i := 0; i < n; i++ {
-		digits.WriteString(fmt.Sprintf("%d", rnd.Intn(10)))
+		digits.WriteString(strconv.Itoa(rnd.Intn(10)))
 	}
 	return digits.String()
 }
 
 func IsStrongPassword(password string) (bool, string) {
 	if len(password) < 6 {
-		return false, "password must be more than 5 characters long"
+		return false, "password must contain at least 6 characters"
+	}
+	uppercase, _ := regexp.MatchString(`[A-Z]`, password)
+	if !uppercase {
+		return false, "password must contain at least one uppercase letter"
+	}
+	lowercase, _ := regexp.MatchString(`[a-z]`, password)
+	if !lowercase {
+		return false, "password must contain at least one lowercase letter"
+	}
+	digit, _ := regexp.MatchString(`[0-9]`, password)
+	if !digit {
+		return false, "password must contain at least one digit"
+	}
+	specialChar, _ := regexp.MatchString(`[!@#\$%\^&\*\(\)_\+\-=\[\]{};':"\\|,.<>\/?~]`, password)
+	if !specialChar {
+		return false, "password must contain at least one special character"
 	}
 	return true, ""
+}
+
+func VerifyVerificationCode(ctx context.Context, db pgx.Tx, queries *db.Queries, user *db.User, code string) (bool, error) {
+	tx, err := db.Begin(ctx)
+	if err != nil {
+		return false, err
+	}
+	defer tx.Rollback(ctx)
+
+	qtx := queries.WithTx(tx)
+	dbCode, err := qtx.GetEmailVerificationByUserId(ctx, user.ID)
+	if err != nil {
+		tx.Commit(ctx)
+		return false, fmt.Errorf("user not found")
+	}
+	_, err = qtx.DeleteEmailVerificationByUserId(ctx, user.ID)
+	if err != nil {
+		tx.Rollback(ctx)
+		return false, fmt.Errorf("code was not deleted")
+	}
+	tx.Commit(ctx)
+	isvalid := IsWithinExpirationDate(dbCode.ExpiresAt.Time)
+	if !isvalid {
+		return false, nil
+	}
+	if dbCode.Email != user.Email {
+		return false, nil
+	}
+	return true, nil
+}
+
+func IsWithinExpirationDate(expirationDate time.Time) bool {
+	currentTime := time.Now()
+	return !expirationDate.After(currentTime)
+}
+
+func ParseJSON(request *http.Request, body any) error {
+	err := json.NewDecoder(request.Body).Decode(body)
+	defer request.Body.Close()
+	return err
+}
+
+func MarshalJson(w http.ResponseWriter, body any) error {
+	return json.NewEncoder(w).Encode(&body)
+}
+
+func NewSaveSessionAttrs(userId int32) *db.SaveSessionParams {
+	return &db.SaveSessionParams{
+		ID:     uuid.New().String(),
+		UserID: userId,
+		ExpiresAt: pgtype.Timestamp{
+			Time:  time.Now().Add(time.Hour * 24 * 2),
+			Valid: true,
+		},
+	}
+}
+
+func SendPasswordResetEmail(email string, code string) error {
+	auth := smtp.PlainAuth("", config.GetConfig().SMTP_USERNAME, config.GetConfig().SMTP_PASSWORD, config.GetConfig().SMTP_HOST)
+	from := config.GetConfig().SMTP_EMAIL
+	to := []string{email}
+
+	headers := make(map[string]string)
+	headers["From"] = from
+	headers["To"] = email
+	headers["Subject"] = "Password Reset"
+	headers["MIME-Version"] = "1.0"
+	headers["Content-Type"] = "text/html; charset=\"UTF-8\""
+
+	htmlBody := fmt.Sprintf(`
+		<html>
+			<body>
+				<p>Reset Password</p>
+				<a href="%s">Reset Password</a>
+			</body>
+		</html>`, code)
+
+	var message string
+	for k, v := range headers {
+		message += fmt.Sprintf("%s: %s\r\n", k, v)
+	}
+	message += "\r\n" + htmlBody
+
+	smtpUrl := config.GetConfig().SMTP_HOST + ":" + config.GetConfig().SMTP_PORT
+	err := smtp.SendMail(smtpUrl, auth, from, to, []byte(message))
+	return err
+}
+
+func CreatePasswordRestToken(ctx context.Context, q *db.Queries, userId int32) (string, error) {
+	if err := q.DeleteRestPasswordByUserId(ctx, userId); err != nil {
+		return "", err
+	}
+	tokenId, err := generateIdFromEntropy(25)
+	if err != nil {
+		return "", err
+	}
+	tokenHash := EncodeString(tokenId)
+	_, err = q.SavePasswordRestToken(ctx, db.SavePasswordRestTokenParams{
+		TokenHash: pgtype.Text{String: tokenHash, Valid: true},
+		UserID:    userId,
+		ExpiresAt: pgtype.Date{
+			Time:  time.Now().Add(time.Minute * 15),
+			Valid: true,
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return tokenId, nil
+}
+
+func generateIdFromEntropy(size int) (string, error) {
+	// Create a byte slice with the desired entropy size
+	buffer := make([]byte, size)
+
+	// Fill the slice with random values
+	rnd := rand.New(rand.NewSource(time.Now().UnixMilli()))
+	_, err := rnd.Read(buffer)
+	if err != nil {
+		return "", err
+	}
+
+	// Encode the random values using Base32 encoding
+	encoded := base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(buffer)
+
+	// Convert to lowercase as per your JS implementation
+	encoded = strings.ToLower(encoded)
+
+	return encoded, nil
+}
+
+func InvalidateAllUserSessions(ctx context.Context, q *db.Queries, userId int32) error {
+	_, err := q.DeleteSessionByUserId(ctx, userId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func EncodeString(verificationToken string) string {
+	tokenBytes := []byte(verificationToken)
+	hash := sha256.Sum256(tokenBytes)
+	hexHash := hex.EncodeToString(hash[:]) //hash[:] converts [32]byte into []byte i.e. array -> slice
+	return hexHash
 }

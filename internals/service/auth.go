@@ -109,12 +109,13 @@ func generateEmailVerificationCode(ctx context.Context, userId int32, email stri
 	}
 
 	code := utils.GenerateRandomDigits(6)
-	_, err = q.SaveEmailVerification(ctx, db.SaveEmailVerificationParams{
+	data := db.SaveEmailVerificationParams{
 		Code:      code,
 		UserID:    userId,
 		Email:     email,
 		ExpiresAt: pgtype.Date{Time: time.Now().Add(15 * time.Minute), Valid: true},
-	})
+	}
+	_, err = q.SaveEmailVerification(ctx, data)
 	if err != nil {
 		return "", fmt.Errorf("error saving varification code: %v", err)
 	}

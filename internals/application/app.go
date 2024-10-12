@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/punpundada/shelfMaster/internals/config"
 	db "github.com/punpundada/shelfMaster/internals/db/sqlc"
 )
@@ -13,9 +14,9 @@ type App struct {
 	route http.Handler
 }
 
-func New(q *db.Queries) *App {
+func New(q *db.Queries, conn *pgx.Conn) *App {
 	return &App{
-		route: loadRoutes(q),
+		route: loadRoutes(q, conn),
 	}
 }
 

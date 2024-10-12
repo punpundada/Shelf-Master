@@ -10,3 +10,6 @@ SELECT * FROM sessions WHERE id = $1;
 UPDATE sessions SET expires_at = $1 , fresh = $2
 WHERE id = $3
 RETURNING *;
+
+-- name: DeleteSessionByUserId :one
+DELETE FROM sessions where user_id = $1 RETURNING user_id;
