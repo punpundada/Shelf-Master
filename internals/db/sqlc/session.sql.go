@@ -11,6 +11,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const deleteSessionByUserId = `-- name: DeleteSessionByUserId :one
+DELETE FROM sessions where user_id = $1 RETURNING user_id
+`
+
+func (q *Queries) DeleteSessionByUserId(ctx context.Context, userID int32) (int32, error) {
+	row := q.db.QueryRow(ctx, deleteSessionByUserId, userID)
+	var user_id int32
+	err := row.Scan(&user_id)
+	return user_id, err
+}
+
 const getSessionById = `-- name: GetSessionById :one
 SELECT id, user_id, expires_at, fresh FROM sessions WHERE id = $1
 `

@@ -16,3 +16,7 @@ UPDATE users
 -- name: UpdateUsersEmail_verification :one
 UPDATE users
     set email_verified = $1 WHERE id = $2 RETURNING id;
+
+-- name: UpdateUserPasswordByUserId :one
+UPDATE users
+    set password_hash = $1 RETURNING id;

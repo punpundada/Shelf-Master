@@ -2,6 +2,9 @@ package utils
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/base32"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -240,7 +243,7 @@ func VerifyVerificationCode(ctx context.Context, db pgx.Tx, queries *db.Queries,
 		return false, fmt.Errorf("code was not deleted")
 	}
 	tx.Commit(ctx)
-	isvalid := isWithinExpirationDate(dbCode.ExpiresAt.Time)
+	isvalid := IsWithinExpirationDate(dbCode.ExpiresAt.Time)
 	if !isvalid {
 		return false, nil
 	}
@@ -250,7 +253,7 @@ func VerifyVerificationCode(ctx context.Context, db pgx.Tx, queries *db.Queries,
 	return true, nil
 }
 
-func isWithinExpirationDate(expirationDate time.Time) bool {
+func IsWithinExpirationDate(expirationDate time.Time) bool {
 	currentTime := time.Now()
 	return !expirationDate.After(currentTime)
 }
@@ -274,4 +277,94 @@ func NewSaveSessionAttrs(userId int32) *db.SaveSessionParams {
 			Valid: true,
 		},
 	}
+}
+
+func SendPasswordResetEmail(email string, code string) error {
+	auth := smtp.PlainAuth("", config.GetConfig().SMTP_USERNAME, config.GetConfig().SMTP_PASSWORD, config.GetConfig().SMTP_HOST)
+	from := config.GetConfig().SMTP_EMAIL
+	to := []string{email}
+
+	headers := make(map[string]string)
+	headers["From"] = from
+	headers["To"] = email
+	headers["Subject"] = "Password Reset"
+	headers["MIME-Version"] = "1.0"
+	headers["Content-Type"] = "text/html; charset=\"UTF-8\""
+
+	htmlBody := fmt.Sprintf(`
+		<html>
+			<body>
+				<p>Reset Password</p>
+				<a href="%s">Reset Password</a>
+			</body>
+		</html>`, code)
+
+	var message string
+	for k, v := range headers {
+		message += fmt.Sprintf("%s: %s\r\n", k, v)
+	}
+	message += "\r\n" + htmlBody
+
+	smtpUrl := config.GetConfig().SMTP_HOST + ":" + config.GetConfig().SMTP_PORT
+	err := smtp.SendMail(smtpUrl, auth, from, to, []byte(message))
+	return err
+}
+
+func CreatePasswordRestToken(ctx context.Context, q *db.Queries, userId int32) (string, error) {
+	if err := q.DeleteRestPasswordByUserId(ctx, userId); err != nil {
+		return "", err
+	}
+	tokenId, err := generateIdFromEntropy(25)
+	if err != nil {
+		return "", err
+	}
+	tokenHash := EncodeString(tokenId)
+	_, err = q.SavePasswordRestToken(ctx, db.SavePasswordRestTokenParams{
+		TokenHash: pgtype.Text{String: tokenHash, Valid: true},
+		UserID:    userId,
+		ExpiresAt: pgtype.Date{
+			Time:  time.Now().Add(time.Minute * 15),
+			Valid: true,
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return tokenId, nil
+}
+
+func generateIdFromEntropy(size int) (string, error) {
+	// Create a byte slice with the desired entropy size
+	buffer := make([]byte, size)
+
+	// Fill the slice with random values
+	rnd := rand.New(rand.NewSource(time.Now().UnixMilli()))
+	_, err := rnd.Read(buffer)
+	if err != nil {
+		return "", err
+	}
+
+	// Encode the random values using Base32 encoding
+	encoded := base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(buffer)
+
+	// Convert to lowercase as per your JS implementation
+	encoded = strings.ToLower(encoded)
+
+	return encoded, nil
+}
+
+func InvalidateAllUserSessions(ctx context.Context, q *db.Queries, userId int32) error {
+	_, err := q.DeleteSessionByUserId(ctx, userId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func EncodeString(verificationToken string) string {
+	tokenBytes := []byte(verificationToken)
+	hash := sha256.Sum256(tokenBytes)
+	hexHash := hex.EncodeToString(hash[:]) //hash[:] converts [32]byte into []byte i.e. array -> slice
+	return hexHash
 }

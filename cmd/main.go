@@ -12,7 +12,6 @@ import (
 
 func main() {
 	ctx := context.Background()
-
 	conn, err := pgx.Connect(ctx, config.GlobalConfig.CONNECTION_STR)
 
 	if err != nil {

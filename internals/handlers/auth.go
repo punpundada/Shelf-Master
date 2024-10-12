@@ -2,12 +2,14 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/punpundada/shelfMaster/internals/config"
 	db "github.com/punpundada/shelfMaster/internals/db/sqlc"
 	"github.com/punpundada/shelfMaster/internals/service"
 	"github.com/punpundada/shelfMaster/internals/utils"
@@ -122,4 +124,79 @@ func (a *Auth) EmailVerification(w http.ResponseWriter, r *http.Request) {
 	sessionCookie := utils.CreateSessionCookies(session.ID)
 	w.WriteHeader(http.StatusOK)
 	http.SetCookie(w, sessionCookie)
+}
+
+func (a *Auth) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	body := struct {
+		Email string `json:"email"`
+	}{}
+	if err := utils.ParseJSON(r, &body); err != nil {
+		utils.WriteErrorResponse(w, http.StatusBadRequest, "Unable to parse body "+err.Error())
+		return
+	}
+	user, err := a.Queries.GetUserByEmail(r.Context(), body.Email)
+	if err != nil {
+		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid email "+err.Error())
+		return
+	}
+	verificationToken, err := utils.CreatePasswordRestToken(r.Context(), a.Queries, user.ID)
+	if err != nil {
+		utils.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	verificationLink := config.GetConfig().FRONTEND_URL + "reset-password/" + verificationToken
+	err = utils.SendPasswordResetEmail(user.Email, verificationLink)
+	if err != nil {
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, "unable to send email "+err.Error())
+		return
+	}
+	fmt.Println("token", verificationToken)
+	utils.WriteResponse(w, http.StatusOK, "Password resend link send", true)
+}
+
+func (a *Auth) VeryfyRestPassword(w http.ResponseWriter, r *http.Request) {
+	body := struct {
+		Password string `json:"password"`
+	}{}
+	if err := utils.ParseJSON(r, &body); err != nil {
+		utils.WriteErrorResponse(w, http.StatusBadRequest, "Error parsing body "+err.Error())
+		return
+	}
+	verificationToken := r.PathValue("tokenId")
+	tokenHash := utils.EncodeString(verificationToken)
+	fmt.Println("tokenHash", tokenHash)
+	resetToken, err := a.Queries.GetResetPasswordFromTokenHash(r.Context(), pgtype.Text{
+		String: tokenHash,
+		Valid:  true,
+	})
+	if err != nil {
+		utils.WriteErrorResponse(w, http.StatusBadRequest, "invalid request : "+err.Error())
+		return
+	}
+	if !utils.IsWithinExpirationDate(resetToken.ExpiresAt.Time) {
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, "No response")
+		return
+	}
+	if err = utils.InvalidateAllUserSessions(r.Context(), a.Queries, resetToken.UserID); err != nil {
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	passwordHash, err := utils.HashString(body.Password)
+	if err != nil {
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	_, err = a.Queries.UpdateUserPasswordByUserId(r.Context(), passwordHash)
+	if err != nil {
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	session, err := a.Queries.SaveSession(r.Context(), *utils.NewSaveSessionAttrs(resetToken.UserID))
+	if err != nil {
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	sessionCookie := utils.CreateSessionCookies(session.ID)
+	http.SetCookie(w, sessionCookie)
+	w.Header().Add("Referrer-Policy", "strict-origin")
 }
