@@ -97,7 +97,7 @@ type Library struct {
 	UpdatedAt   pgtype.Timestamp `json:"updated_at"`
 }
 
-type RestPassword struct {
+type ResetPassword struct {
 	TokenHash pgtype.Text `json:"token_hash"`
 	UserID    int32       `json:"user_id"`
 	ExpiresAt pgtype.Date `json:"expires_at"`
