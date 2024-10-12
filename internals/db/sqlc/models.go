@@ -97,6 +97,12 @@ type Library struct {
 	UpdatedAt   pgtype.Timestamp `json:"updated_at"`
 }
 
+type RestPassword struct {
+	TokenHash pgtype.Text `json:"token_hash"`
+	UserID    int32       `json:"user_id"`
+	ExpiresAt pgtype.Date `json:"expires_at"`
+}
+
 type Session struct {
 	ID        string           `json:"id"`
 	UserID    int32            `json:"user_id"`
