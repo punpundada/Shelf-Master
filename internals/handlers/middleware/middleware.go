@@ -38,8 +38,8 @@ func (m *Middleware) ValidateSessionCookie(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		session, user, err := utils.ValidateSession(r.Context(), m.Queries, cookie.Value)
-		if err != nil {
+		session, user, apiErr := utils.ValidateSession(r.Context(), m.Queries, cookie.Value)
+		if apiErr != nil {
 			http.SetCookie(w, utils.CreateBlankSessionCookie())
 			next.ServeHTTP(w, r)
 			return
@@ -80,6 +80,26 @@ func (m *Middleware) TimeoutRequest(next http.Handler) http.Handler {
 		ctx, cancle := context.WithTimeout(r.Context(), time.Second*5)
 		defer cancle()
 		r = r.WithContext(ctx)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (m *Middleware) AdminOnly(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user, err := utils.GetUserFromContext(r.Context())
+		if err != nil {
+			err.WriteError(w, "Forbidden")
+			return
+		}
+		role, error := user.Role.Value()
+		if error != nil {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+		if role != db.RoleTypeADMIN {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
 		next.ServeHTTP(w, r)
 	})
 }

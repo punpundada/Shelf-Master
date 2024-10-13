@@ -3,11 +3,16 @@ package config
 import (
 	"log"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
 var GlobalConfig *Config
 
 func init() {
+	if err := godotenv.Load(); err != nil {
+		log.Print("No .env file found")
+	}
 	GlobalConfig = GetConfig()
 }
 func getEnv(env string) string {

@@ -334,12 +334,67 @@ func SendPasswordResetEmail(email string, code string) error {
 	headers["Content-Type"] = "text/html; charset=\"UTF-8\""
 
 	htmlBody := fmt.Sprintf(`
-		<html>
-			<body>
-				<p>Reset Password</p>
-				<a href="%s">Reset Password</a>
-			</body>
-		</html>`, code)
+	<html>
+		<head>
+			<style>
+				body {
+					font-family: Arial, sans-serif;
+					background-color: #f4f4f4;
+					margin: 0;
+					padding: 0;
+					color: #333;
+				}
+				.container {
+					max-width: 600px;
+					margin: 50px auto;
+					padding: 20px;
+					background-color: #fff;
+					border-radius: 8px;
+					box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+				}
+				h1 {
+					color: #444;
+					font-size: 24px;
+					text-align: center;
+				}
+				p {
+					font-size: 16px;
+					line-height: 1.6;
+					color: #666;
+					text-align: center;
+				}
+				.reset-button {
+					display: inline-block;
+					padding: 10px 20px;
+					font-size: 16px;
+					color: white;
+					background-color: #007BFF;
+					text-decoration: none;
+					border-radius: 5px;
+					text-align: center;
+				}
+				.reset-button:hover {
+					background-color: #0056b3;
+				}
+				.footer {
+					font-size: 12px;
+					text-align: center;
+					color: #888;
+					margin-top: 20px;
+				}
+			</style>
+		</head>
+		<body>
+			<div class="container">
+				<h1>Reset Your Password</h1>
+				<p>You requested a password reset. Click the button below to reset your password:</p>
+				<p><a href="%s" class="reset-button" style="color:white">Reset Password</a></p>
+				<div class="footer">
+					<p>If you did not request a password reset, please ignore this email.</p>
+				</div>
+			</div>
+		</body>
+	</html>`, code)
 
 	var message string
 	for k, v := range headers {
