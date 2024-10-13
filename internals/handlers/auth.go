@@ -82,42 +82,42 @@ func (a *Auth) EmailVerification(w http.ResponseWriter, r *http.Request) {
 	ses, err := utils.GetSessionFromContext(r.Context())
 
 	if err != nil {
-		utils.WriteErrorResponse(w, http.StatusUnauthorized, "Invalid session: "+err.Error())
+		err.WriteError(w, "Invalid session")
 		return
 	}
 	_, user, err := utils.ValidateSession(r.Context(), a.Queries, ses.ID)
 	if err != nil {
-		utils.WriteErrorResponse(w, http.StatusUnauthorized, "session not found: "+err.Error())
+		err.WriteError(w, "session not found")
 		return
 	}
 	if user == nil {
 		utils.WriteErrorResponse(w, http.StatusUnauthorized, "user not found: ")
 		return
 	}
-	tx, err := a.Conntection.BeginTx(r.Context(), pgx.TxOptions{})
-	if err != nil {
+	tx, error := a.Conntection.BeginTx(r.Context(), pgx.TxOptions{})
+	if error != nil {
 		utils.WriteErrorResponse(w, http.StatusInternalServerError, "error starting transtaction"+err.Error())
 		return
 	}
 	isValidCode, err := utils.VerifyVerificationCode(r.Context(), tx, a.Queries, user, body.Code)
 	if err != nil {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
+		err.WriteError(w)
 		return
 	}
 	if !isValidCode {
 		utils.WriteErrorResponse(w, http.StatusBadRequest, "invalid code")
 		return
 	}
-	_, err = a.Queries.UpdateUsersEmail_verification(r.Context(), db.UpdateUsersEmail_verificationParams{
+	_, error = a.Queries.UpdateUsersEmail_verification(r.Context(), db.UpdateUsersEmail_verificationParams{
 		EmailVerified: pgtype.Bool{Bool: true, Valid: true},
 		ID:            user.ID,
 	})
-	if err != nil {
+	if error != nil {
 		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Error updatin users: "+err.Error())
 		return
 	}
-	session, err := a.Queries.SaveSession(r.Context(), *utils.NewSaveSessionAttrs(user.ID))
-	if err != nil {
+	session, error := a.Queries.SaveSession(r.Context(), *utils.NewSaveSessionAttrs(user.ID))
+	if error != nil {
 		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Error saving session: "+err.Error())
 		return
 	}
@@ -165,34 +165,34 @@ func (a *Auth) VeryfyRestPassword(w http.ResponseWriter, r *http.Request) {
 	verificationToken := r.PathValue("tokenId")
 	tokenHash := utils.EncodeString(verificationToken)
 	fmt.Println("tokenHash", tokenHash)
-	resetToken, err := a.Queries.GetResetPasswordFromTokenHash(r.Context(), pgtype.Text{
+	resetToken, error := a.Queries.GetResetPasswordFromTokenHash(r.Context(), pgtype.Text{
 		String: tokenHash,
 		Valid:  true,
 	})
-	if err != nil {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, "invalid request : "+err.Error())
+	if error != nil {
+		utils.WriteErrorResponse(w, http.StatusBadRequest, "invalid request : "+error.Error())
 		return
 	}
 	if !utils.IsWithinExpirationDate(resetToken.ExpiresAt.Time) {
 		utils.WriteErrorResponse(w, http.StatusInternalServerError, "No response")
 		return
 	}
-	if err = utils.InvalidateAllUserSessions(r.Context(), a.Queries, resetToken.UserID); err != nil {
-		utils.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
+	if error = utils.InvalidateAllUserSessions(r.Context(), a.Queries, resetToken.UserID); error != nil {
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, error.Error())
 		return
 	}
 	passwordHash, err := utils.HashString(body.Password)
 	if err != nil {
+		err.WriteError(w)
+		return
+	}
+	_, error = a.Queries.UpdateUserPasswordByUserId(r.Context(), passwordHash)
+	if error != nil {
 		utils.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	_, err = a.Queries.UpdateUserPasswordByUserId(r.Context(), passwordHash)
-	if err != nil {
-		utils.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	session, err := a.Queries.SaveSession(r.Context(), *utils.NewSaveSessionAttrs(resetToken.UserID))
-	if err != nil {
+	session, error := a.Queries.SaveSession(r.Context(), *utils.NewSaveSessionAttrs(resetToken.UserID))
+	if error != nil {
 		utils.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}

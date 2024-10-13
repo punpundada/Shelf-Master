@@ -20,3 +20,7 @@ UPDATE users
 -- name: UpdateUserPasswordByUserId :one
 UPDATE users
     set password_hash = $1 RETURNING id;
+
+-- name: CreateLibrarian :one
+UPDATE users
+    SET role = 'LIBRARIAN' WHERE id = $1 RETURNING id;

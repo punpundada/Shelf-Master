@@ -17,11 +17,11 @@ func AdminOnly(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user, err := utils.GetUserFromContext(r.Context())
 		if err != nil {
-			http.Error(w, "Forbidden", http.StatusForbidden)
+			err.WriteError(w, "Forbidden")
 			return
 		}
-		role, err := user.Role.Value()
-		if err != nil {
+		role, error := user.Role.Value()
+		if error != nil {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
@@ -38,4 +38,14 @@ func (a *AdminService) CreateAdmin(ctx context.Context, id int32) (int32, error)
 		return 0, fmt.Errorf("error while updating user data: %v", err)
 	}
 	return updatedId, nil
+}
+
+func (a *AdminService) CreateLibrarian(ctx context.Context, userId int32) (int32, *utils.ApiError) {
+	//update user with role = 'librarian'
+	//runtuen id and error
+	id, err := a.Queries.CreateLibrarian(ctx, userId)
+	if err != nil {
+		return 0, utils.NewApiError(err.Error(), http.StatusInternalServerError)
+	}
+	return id, nil
 }

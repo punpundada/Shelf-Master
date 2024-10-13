@@ -32,10 +32,49 @@ type SuccessResponse struct {
 	Result    any    `json:"result"`
 }
 
-func HashString(str string) (string, error) {
+type ApiError struct {
+	Message string
+	Code    int
+}
+
+func (a *ApiError) Error() string {
+	return a.Message
+}
+
+func (a *ApiError) WriteError(w http.ResponseWriter, details ...string) {
+	errorResponse := ErrorResponse{
+		Success: false,
+		Code:    a.Code,
+		Message: a.Message,
+	}
+	if len(details) > 0 {
+		var sb strings.Builder
+		for index, item := range details {
+			if index == 1 {
+				sb.WriteString(item)
+			}
+			sb.WriteString(". " + item)
+		}
+		errorResponse.Details = sb.String()
+	}
+
+	w.WriteHeader(a.Code)
+	if err := json.NewEncoder(w).Encode(errorResponse); err != nil {
+		http.Error(w, "Failed to generate error response", http.StatusInternalServerError)
+	}
+}
+
+func NewApiError(msg string, code int) *ApiError {
+	return &ApiError{
+		Message: msg,
+		Code:    code,
+	}
+}
+
+func HashString(str string) (string, *ApiError) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(str), bcrypt.DefaultCost)
 	if err != nil {
-		return "", err
+		return "", NewApiError(err.Error(), http.StatusInternalServerError)
 	}
 	return string(hashedPassword), nil
 }
@@ -60,15 +99,15 @@ func VerifyRequestOrigin(origin string, hosts []string) bool {
 	return false
 }
 
-func ValidateSession(ctx context.Context, queries *db.Queries, sessionId string) (*db.Session, *db.User, error) {
+func ValidateSession(ctx context.Context, queries *db.Queries, sessionId string) (*db.Session, *db.User, *ApiError) {
 	session, err := queries.GetSessionById(ctx, sessionId)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, NewApiError(err.Error(), http.StatusBadRequest)
 	}
 	user, err := queries.GetUserById(ctx, session.UserID)
 
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, NewApiError(err.Error(), http.StatusBadRequest)
 	}
 	if time.Now().After(session.ExpiresAt.Time) {
 		session.Fresh = pgtype.Bool{Bool: false, Valid: true}
@@ -145,18 +184,18 @@ func WriteResponse(w http.ResponseWriter, code int, message string, result any) 
 	})
 }
 
-func GetUserFromContext(cxt context.Context) (*db.User, error) {
+func GetUserFromContext(cxt context.Context) (*db.User, *ApiError) {
 	user, ok := cxt.Value(constants.User).(*db.User)
 	if !ok {
-		return nil, fmt.Errorf("user not found")
+		return nil, NewApiError("user not found", http.StatusForbidden)
 	}
 	return user, nil
 }
 
-func GetSessionFromContext(ctx context.Context) (*db.Session, error) {
+func GetSessionFromContext(ctx context.Context) (*db.Session, *ApiError) {
 	session, ok := ctx.Value(constants.Session).(*db.Session)
 	if !ok {
-		return nil, fmt.Errorf("session not found")
+		return nil, NewApiError("session not found", http.StatusForbidden)
 	}
 	return session, nil
 }
@@ -224,10 +263,10 @@ func IsStrongPassword(password string) (bool, string) {
 	return true, ""
 }
 
-func VerifyVerificationCode(ctx context.Context, db pgx.Tx, queries *db.Queries, user *db.User, code string) (bool, error) {
+func VerifyVerificationCode(ctx context.Context, db pgx.Tx, queries *db.Queries, user *db.User, code string) (bool, *ApiError) {
 	tx, err := db.Begin(ctx)
 	if err != nil {
-		return false, err
+		return false, NewApiError(err.Error(), http.StatusInternalServerError)
 	}
 	defer tx.Rollback(ctx)
 
@@ -235,12 +274,12 @@ func VerifyVerificationCode(ctx context.Context, db pgx.Tx, queries *db.Queries,
 	dbCode, err := qtx.GetEmailVerificationByUserId(ctx, user.ID)
 	if err != nil {
 		tx.Commit(ctx)
-		return false, fmt.Errorf("user not found")
+		return false, NewApiError("user not found", http.StatusBadRequest)
 	}
 	_, err = qtx.DeleteEmailVerificationByUserId(ctx, user.ID)
 	if err != nil {
 		tx.Rollback(ctx)
-		return false, fmt.Errorf("code was not deleted")
+		return false, NewApiError("user not found", http.StatusBadRequest)
 	}
 	tx.Commit(ctx)
 	isvalid := IsWithinExpirationDate(dbCode.ExpiresAt.Time)
@@ -258,10 +297,13 @@ func IsWithinExpirationDate(expirationDate time.Time) bool {
 	return !expirationDate.After(currentTime)
 }
 
-func ParseJSON(request *http.Request, body any) error {
+func ParseJSON(request *http.Request, body any) *ApiError {
 	err := json.NewDecoder(request.Body).Decode(body)
 	defer request.Body.Close()
-	return err
+	if err != nil {
+		return NewApiError("error parsing body "+err.Error(), http.StatusBadRequest)
+	}
+	return nil
 }
 
 func MarshalJson(w http.ResponseWriter, body any) error {

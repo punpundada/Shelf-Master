@@ -53,5 +53,6 @@ func loadAdminRoutes(q *db.Queries) func(chi.Router) {
 	adminRoutes := handlers.NewAdmin(q)
 	return func(router chi.Router) {
 		router.Patch("/create/{id}", adminRoutes.CreateNewAdmin)
+		router.Patch("/create/lib/{id}", adminRoutes.CreateLibrarian)
 	}
 }

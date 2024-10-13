@@ -22,6 +22,17 @@ func (q *Queries) CreateAdmin(ctx context.Context, id int32) (int32, error) {
 	return id, err
 }
 
+const createLibrarian = `-- name: CreateLibrarian :one
+UPDATE users
+    SET role = 'LIBRARIAN' WHERE id = $1 RETURNING id
+`
+
+func (q *Queries) CreateLibrarian(ctx context.Context, id int32) (int32, error) {
+	row := q.db.QueryRow(ctx, createLibrarian, id)
+	err := row.Scan(&id)
+	return id, err
+}
+
 const getUserByEmail = `-- name: GetUserByEmail :one
 SELECT id, email, password_hash, name, mobile_number, role, created_at, updated_at, email_verified FROM users WHERE email = $1
 `
