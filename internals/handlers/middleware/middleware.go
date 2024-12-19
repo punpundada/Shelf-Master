@@ -15,6 +15,12 @@ type Middleware struct {
 	Queries *db.Queries
 }
 
+func New(q *db.Queries) *Middleware {
+	return &Middleware{
+		Queries: q,
+	}
+}
+
 func (m *Middleware) CSRFProtection(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {

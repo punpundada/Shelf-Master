@@ -15,9 +15,7 @@ import (
 
 func loadRoutes(q *db.Queries, Conn *pgx.Conn) *chi.Mux {
 	router := chi.NewRouter()
-	mw := &m.Middleware{
-		Queries: q,
-	}
+	mw := m.New(q)
 	// router.Use(mw.CSRFProtection)
 	router.Use(mw.SetContentType)
 	router.Use(mw.ValidateSessionCookie)
@@ -30,6 +28,7 @@ func loadRoutes(q *db.Queries, Conn *pgx.Conn) *chi.Mux {
 			w.Write([]byte(`{"no_user_found":"no_user_found"}`))
 			return
 		}
+
 		data, _ := json.Marshal(user)
 		w.Write(data)
 
