@@ -21,7 +21,7 @@ services:
   backend:
     container_name: shelfmaster_backend
     build:
-      context: .
+      context: backend/
       dockerfile: dockerfile
       target: development
     depends_on:
