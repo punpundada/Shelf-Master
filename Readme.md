@@ -98,6 +98,34 @@ Run React app
 npm run dev
 ```
 
+## Makefile Info
+- To run project through Makefile you must have it installed in your system
+- Make file is for backend server
+
+To run backend
+```bash
+make run
+```
+This will run `go run cmd/main.go`
+
+To build backend
+```bash
+make build
+```
+This will run `go build -o bin/app cmd/main.go`
+
+To Generate SQLC
+```bash
+make gen
+```
+This will run `docker run --rm -v ${shell pwd}:/src -w /src sqlc/sqlc generate`
+Running a docker instance with sqlc and generating the schema
+
+To run tests
+```bash
+make test
+```
+This will run `go test ./...`
 
 # Hi, I'm Prajwal! 👋
 

@@ -14,6 +14,6 @@ RUN go build -o bin/app cmd/main.go
 CMD ["air"]
 
 
-FROM scratch
+FROM scratch AS production
 COPY --from=development /usr/src/app/bin/app /usr/src/app/bin/app
 ENTRYPOINT ["./app"]

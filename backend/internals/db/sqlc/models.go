@@ -63,12 +63,17 @@ type Author struct {
 }
 
 type Book struct {
-	ID          int32            `json:"id"`
-	Name        string           `json:"name"`
-	Authorid    int32            `json:"authorid"`
-	Description string           `json:"description"`
-	CreatedAt   pgtype.Timestamp `json:"created_at"`
-	UpdatedAt   pgtype.Timestamp `json:"updated_at"`
+	ID            int32            `json:"id"`
+	Name          string           `json:"name"`
+	Authorid      int32            `json:"authorid"`
+	Description   string           `json:"description"`
+	CreatedAt     pgtype.Timestamp `json:"created_at"`
+	UpdatedAt     pgtype.Timestamp `json:"updated_at"`
+	Isbn10        pgtype.Text      `json:"isbn_10"`
+	Isbn13        pgtype.Text      `json:"isbn_13"`
+	Edition       string           `json:"edition"`
+	Publisher     string           `json:"publisher"`
+	DatePublished pgtype.Timestamp `json:"date_published"`
 }
 
 type BookInventory struct {

@@ -1,5 +1,11 @@
 package service
 
-type UserSerivce struct{}
+import db "github.com/punpundada/shelfMaster/internals/db/sqlc"
 
-func (s *UserSerivce) GetUserById() {}
+type UserSerivce struct {
+	queries *db.Queries
+}
+
+func (s *UserSerivce) GetUserById() {
+
+}
