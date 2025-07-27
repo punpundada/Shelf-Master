@@ -75,6 +75,12 @@ Run on docker
   docker compose up --build
 ```
 
+connect database in terminal
+
+```bash
+  docker ps
+  docker exec -it <container_name> psql -U <username> -d <database>
+```
 ## Run Backend Saperately
 From Parent directory CD into backend directory
 
@@ -86,6 +92,15 @@ Start server
 
 ```bash
 go run cmd/main.go
+```
+For hot reloading use AIR
+```bash
+go install github.com/air-verse/air@latest
+```
+
+To run project from `air` go to backend dir
+```bash
+air
 ```
 
 From Parent directory CD into client directory
@@ -133,7 +148,8 @@ This will run `go test ./...`
 ## 🚀 About Me
 I'm a passionate full-stack developer with expertise in building scalable and efficient web applications. Proficient in modern technologies like React, Node.js, Go, and Docker, I thrive on solving complex problems and delivering impactful solutions.
 ## 🔗 Links
+[![GitHub](https://img.shields.io/badge/GitHub-%23121011.svg?logo=github&logoColor=white)](https://github.com/punpundada)
 [![portfolio](https://img.shields.io/badge/my_portfolio-000?style=for-the-badge&logo=ko-fi&logoColor=white)](https://katherineoelsner.com/)
 [![linkedin](https://img.shields.io/badge/linkedin-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/prajwal-parashkar-09a00a205/)
-[![BlueSky](https://img.shields.io/badge/twitter-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white)](https://twitter.com/)
+[![Bluesky](https://img.shields.io/badge/Bluesky-0285FF?logo=bluesky&logoColor=fff)](https://bsky.app/profile/prajwals.bsky.social)
 

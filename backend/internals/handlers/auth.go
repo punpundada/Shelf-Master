@@ -64,7 +64,11 @@ func (a *Auth) LoginUser(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, utils.CreateSessionCookies(session.ID))
 	if err = json.NewEncoder(w).Encode(struct {
 		Email string `json:"email"`
-	}{Email: user.Email}); err != nil {
+		Name  string `json:"name"`
+	}{
+		Email: user.Email,
+		Name:  user.Name,
+	}); err != nil {
 		utils.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}

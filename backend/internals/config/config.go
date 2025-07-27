@@ -11,7 +11,7 @@ var GlobalConfig *Config
 
 func init() {
 	if err := godotenv.Load("../.env"); err != nil {
-		log.Fatal("No .env file found")
+		log.Println("No .env file found")
 	}
 	GlobalConfig = GetConfig()
 }

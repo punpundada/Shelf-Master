@@ -16,4 +16,4 @@ CMD ["air"]
 
 FROM scratch AS production
 COPY --from=development /usr/src/app/bin/app /usr/src/app/bin/app
-ENTRYPOINT ["./app"]
+ENTRYPOINT ["./usr/src/app/bin/app"]

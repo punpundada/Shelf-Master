@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/smtp"
 	"net/url"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -234,7 +235,7 @@ func SendVerificationEmail(email string, code string) error {
 func GenerateRandomDigits(n int) string {
 	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 	digits := strings.Builder{}
-	for i := 0; i < n; i++ {
+	for range n {
 		digits.WriteString(strconv.Itoa(rnd.Intn(10)))
 	}
 	return digits.String()
@@ -326,7 +327,7 @@ func SendPasswordResetEmail(email string, code string) error {
 	from := config.GetConfig().SMTP_EMAIL
 	to := []string{email}
 
-	headers := make(map[string]string)
+	headers := make(map[string]string, 5)
 	headers["From"] = from
 	headers["To"] = email
 	headers["Subject"] = "Password Reset"
@@ -464,4 +465,42 @@ func EncodeString(verificationToken string) string {
 	hash := sha256.Sum256(tokenBytes)
 	hexHash := hex.EncodeToString(hash[:]) //hash[:] converts [32]byte into []byte i.e. array -> slice
 	return hexHash
+}
+
+func GetStructKeys(i any) []string {
+	t := reflect.TypeOf(i)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem() // handle pointer to struct
+	}
+
+	var keys []string
+	for i := 0; i < t.NumField(); i++ {
+		keys = append(keys, t.Field(i).Name)
+	}
+	return keys
+}
+
+func EntriesFromStruct(s any) [][2]any {
+	val := reflect.ValueOf(s)
+	typ := reflect.TypeOf(s)
+
+	// Handle pointer to struct
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+		typ = typ.Elem()
+	}
+
+	// Optional: Ensure we're dealing with a struct
+	if val.Kind() != reflect.Struct {
+		return nil
+	}
+	var entries [][2]any
+
+	for i := 0; i < val.NumField(); i++ {
+		key := typ.Field(i).Name
+		value := val.Field(i).Interface()
+		entries = append(entries, [2]any{key, value})
+	}
+
+	return entries
 }

@@ -67,11 +67,13 @@ func (a *AuthService) SaveUser(r *http.Request) (*db.User, error) {
 	if isValidEmail := utils.IsValidEmail(body.Email); !isValidEmail {
 		return nil, fmt.Errorf("invalid email")
 	}
+
 	if isStrongPassword, msg := utils.IsStrongPassword(body.PasswordHash); !isStrongPassword {
 		return nil, fmt.Errorf("inscure password: %s", msg)
 	}
-	hashedPassword, err := utils.HashString(body.PasswordHash)
-	if err != nil {
+
+	hashedPassword, apierr := utils.HashString(body.PasswordHash)
+	if apierr != nil {
 		return nil, fmt.Errorf("error hashing password: %v", err)
 	}
 	body.PasswordHash = hashedPassword
@@ -100,7 +102,12 @@ func (a *AuthService) SaveUser(r *http.Request) (*db.User, error) {
 	return &user, nil
 }
 
-func generateEmailVerificationCode(ctx context.Context, userId int32, email string, q *db.Queries) (string, error) {
+func generateEmailVerificationCode(
+	ctx context.Context,
+	userId int32,
+	email string,
+	q *db.Queries,
+) (string, error) {
 	_, err := q.DeleteEmailVerificationByUserId(ctx, userId)
 	if err != nil {
 		if err.Error() != "no rows in result set" {

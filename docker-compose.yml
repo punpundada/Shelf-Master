@@ -23,7 +23,7 @@ services:
     build:
       context: backend/
       dockerfile: dockerfile
-      target: development
+      target: production
     depends_on:
       db:
         condition: service_healthy

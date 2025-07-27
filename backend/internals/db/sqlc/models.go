@@ -132,4 +132,5 @@ type UserBook struct {
 	BookID     int32            `json:"book_id"`
 	BorrowedAt pgtype.Timestamp `json:"borrowed_at"`
 	DueDate    pgtype.Timestamp `json:"due_date"`
+	Returned   pgtype.Bool      `json:"returned"`
 }

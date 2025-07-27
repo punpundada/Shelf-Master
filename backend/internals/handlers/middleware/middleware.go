@@ -109,3 +109,20 @@ func (m *Middleware) AdminOnly(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+func (m *Middleware) LibrarianOnly(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user, apiErr := utils.GetUserFromContext(r.Context())
+		if apiErr != nil {
+			apiErr.WriteError(w, "Forbidden")
+		}
+		role, err := user.Role.Value()
+		if err != nil {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+		}
+		if role != db.RoleTypeLIBRARIAN {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+		}
+		next.ServeHTTP(w, r)
+	})
+}

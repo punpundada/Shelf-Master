@@ -28,13 +28,19 @@ func loadRoutes(q *db.Queries, Conn *pgx.Conn) *chi.Mux {
 			w.Write([]byte(`{"no_user_found":"no_user_found"}`))
 			return
 		}
-
-		data, _ := json.Marshal(user)
+		usr := make(map[string]any)
+		usr["name"] = user.Name
+		usr["role"] = user.Role
+		usr["email"] = user.Email
+		usr["createdAt"] = user.CreatedAt
+		usr["emailVerified"] = user.EmailVerified
+		data, _ := json.Marshal(usr)
 		w.Write(data)
 
 	})
 	router.Route("/auth", loadAuthRoutes(q, Conn))
 	router.Route("/admin", loadAdminRoutes(q, mw))
+	router.Route("/book", loadBookRoutes(q, mw))
 	return router
 }
 
@@ -56,5 +62,13 @@ func loadAdminRoutes(q *db.Queries, mw *m.Middleware) func(chi.Router) {
 		router.Use(mw.AdminOnly)
 		router.Patch("/create/{id}", adminRoutes.CreateNewAdmin)
 		router.Patch("/create/lib/{id}", adminRoutes.CreateLibrarian)
+	}
+}
+
+func loadBookRoutes(q *db.Queries, mw *m.Middleware) func(chi.Router) {
+	var booksHandler = handlers.NewBookservice(q)
+	return func(router chi.Router) {
+		router.Use(mw.LibrarianOnly)
+		router.Post("/create", booksHandler.SaveNewBook)
 	}
 }
